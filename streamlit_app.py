@@ -313,23 +313,8 @@ CUSTOM_CSS = """
         color: #e2e8f0;
         white-space: nowrap;
     }
-    .hist-table tr:hover td,
-    table tr:hover .hist-td {
+    .hist-table tr:hover td {
         background: rgba(99, 102, 241, 0.05);
-    }
-    .hist-th {
-        background: rgba(99, 102, 241, 0.1);
-        padding: 12px;
-        color: #06b6d4;
-        font-weight: 700;
-        border-bottom: 2px solid rgba(255,255,255,0.1);
-        white-space: nowrap;
-    }
-    .hist-td {
-        padding: 10px 14px;
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-        color: #e2e8f0;
-        white-space: nowrap;
     }
     .date-cell {
         color: #94a3b8;
@@ -595,26 +580,36 @@ def render_dan_result(dan_data, ver):
 
 
 def render_history_table(rows, lottery_type):
-    """Render history table as HTML using CSS classes for compact output."""
+    """Render history table as HTML."""
     is_power = lottery_type == "power"
 
     body = ""
     for idx, row in enumerate(rows):
         numbers = [row['n1'], row['n2'], row['n3'], row['n4'], row['n5'], row['n6']]
-        balls = " ".join(f'<span class="data-ball small">{str(n).zfill(2)}</span>' for n in numbers)
+        balls = ""
+        for n in numbers:
+            balls += f'<span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;font-weight:700;font-size:0.85rem;font-family:JetBrains Mono,monospace;margin:2px;">{str(n).zfill(2)}</span>'
         bonus_html = ""
         if is_power:
             bn = row.get('bonus', 0)
-            bonus_html = f'<td class="hist-td"><span class="data-ball small bonus">{str(bn).zfill(2)}</span></td>'
+            bonus_html = f'<td style="padding:8px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);color:white;font-weight:700;font-size:0.85rem;font-family:JetBrains Mono,monospace;">{str(bn).zfill(2)}</span></td>'
         jackpot = row.get('jackpot', '-')
         if jackpot and len(str(jackpot)) > 15:
             jackpot = str(jackpot).split('≈')[-1].strip() if '≈' in str(jackpot) else str(jackpot)[-15:]
-        body += f'<tr><td class="hist-td" style="color:#64748b;">{idx + 1}</td><td class="hist-td date-cell">{row.get("draw_date", "")}</td><td class="hist-td"><div style="display:flex;gap:4px;flex-wrap:wrap;">{balls}</div></td>{bonus_html}<td class="hist-td jackpot-cell">{jackpot}</td></tr>'
+        body += f'''<tr>
+            <td style="color:#64748b;padding:8px;text-align:center;">{idx + 1}</td>
+            <td style="color:#94a3b8;padding:8px;font-family:JetBrains Mono,monospace;font-size:0.85rem;white-space:nowrap;">{row.get('draw_date', '')}</td>
+            <td style="padding:8px;"><div style="display:flex;gap:4px;flex-wrap:wrap;">{balls}</div></td>
+            {bonus_html}
+            <td style="color:#f59e0b;font-weight:600;padding:8px;font-family:JetBrains Mono,monospace;font-size:0.85rem;">{jackpot}</td>
+        </tr>'''
 
-    header = '<th class="hist-th">#</th><th class="hist-th">Ngày</th><th class="hist-th">Kết Quả</th>'
+    header = '<th style="background:rgba(99,102,241,0.1);padding:12px;color:#06b6d4;font-weight:700;border-bottom:2px solid rgba(255,255,255,0.1);">#</th>'
+    header += '<th style="background:rgba(99,102,241,0.1);padding:12px;color:#06b6d4;font-weight:700;border-bottom:2px solid rgba(255,255,255,0.1);">Ngày</th>'
+    header += '<th style="background:rgba(99,102,241,0.1);padding:12px;color:#06b6d4;font-weight:700;border-bottom:2px solid rgba(255,255,255,0.1);">Kết Quả</th>'
     if is_power:
-        header += '<th class="hist-th">Số ĐB</th>'
-    header += '<th class="hist-th">Jackpot</th>'
+        header += '<th style="background:rgba(99,102,241,0.1);padding:12px;color:#06b6d4;font-weight:700;border-bottom:2px solid rgba(255,255,255,0.1);">Số ĐB</th>'
+    header += '<th style="background:rgba(99,102,241,0.1);padding:12px;color:#06b6d4;font-weight:700;border-bottom:2px solid rgba(255,255,255,0.1);">Jackpot</th>'
 
     st.markdown(f"""
     <div class="glass-card">
@@ -879,8 +874,7 @@ def render_lottery_tab(lottery_type):
         skey = f"dan_{ver}_{lottery_type}"
         if skey in st.session_state:
             dan_data = st.session_state[skey]
-            if isinstance(dan_data, dict):
-                render_dan_result(dan_data, ver)
+            render_dan_result(dan_data, ver)
 
     # ---- PHASE TOOLS (collapsed) ----
     with st.expander("🛠️ Công cụ phân tích chi tiết (Phase 1-7)..."):
@@ -1026,6 +1020,39 @@ def main():
     # Inject CSS
     st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
+    # ---- AUTO-UPDATE DATA ON FIRST LOAD ----
+    if "auto_update_done" not in st.session_state:
+        st.session_state.auto_update_done = False
+        st.session_state.auto_update_result = None
+
+    if not st.session_state.auto_update_done:
+        with st.spinner("🔄 Đang kiểm tra & cập nhật dữ liệu mới nhất..."):
+            try:
+                from scraper.auto_updater import auto_update_data
+                result = auto_update_data()
+                st.session_state.auto_update_result = result
+                st.session_state.auto_update_done = True
+                if result['status'] == 'updated' and (result['mega_new'] > 0 or result['power_new'] > 0):
+                    st.rerun()  # Rerun to show fresh data in header
+            except Exception as e:
+                st.session_state.auto_update_result = {
+                    'status': 'error',
+                    'message': f'⚠️ Auto-update error: {str(e)[:100]}',
+                }
+                st.session_state.auto_update_done = True
+
+    # Show auto-update status notification
+    update_result = st.session_state.get("auto_update_result")
+    if update_result:
+        status = update_result.get('status', '')
+        msg = update_result.get('message', '')
+        if status == 'updated' and (update_result.get('mega_new', 0) > 0 or update_result.get('power_new', 0) > 0):
+            st.success(f"🔄 {msg}")
+        elif status == 'error':
+            st.warning(f"{msg}")
+        else:
+            st.info(f"📊 {msg}")
+
     # ---- HEADER ----
     mega_count = get_count("mega")
     power_count = get_count("power")
@@ -1051,15 +1078,18 @@ def main():
     with tab_power:
         render_lottery_tab("power")
 
-    # ---- SIDEBAR: Scrape ----
+    # ---- SIDEBAR ----
     with st.sidebar:
         st.markdown("### ⚙️ Cài Đặt")
-        if st.button("🔄 Cập Nhật Dữ Liệu", use_container_width=True):
+        if st.button("🔄 Cập Nhật Dữ Liệu (Thủ Công)", use_container_width=True):
             with st.spinner("Đang thu thập dữ liệu mới..."):
                 try:
                     from scraper.scraper import scrape_all
                     scrape_all()
                     st.success(f"✅ Mega: {get_count('mega')} | Power: {get_count('power')}")
+                    # Reset auto-update state so next rerun shows fresh counts
+                    st.session_state.auto_update_done = False
+                    st.session_state.auto_update_result = None
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ {e}")
