@@ -372,6 +372,57 @@ CUSTOM_CSS = """
         box-shadow: 0 6px 25px rgba(244, 63, 94, 0.4) !important;
     }
 
+    /* ---- Match Balls ---- */
+    .match-ball {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+        font-family: 'JetBrains Mono', monospace;
+        margin: 2px;
+        color: white;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+    }
+    .nomatch-ball {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+        font-family: 'JetBrains Mono', monospace;
+        margin: 2px;
+        color: #64748b;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .pred-ball {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+        font-family: 'JetBrains Mono', monospace;
+        margin: 2px;
+        color: white;
+    }
+    .pred-ball.hit {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+    }
+    .pred-ball.miss {
+        background: rgba(239, 68, 68, 0.2);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #f87171;
+    }
+
     /* ---- Footer ---- */
     .footer-text {
         text-align: center;
@@ -818,6 +869,178 @@ def render_stats(analysis, lottery_type):
 
 
 # ============================================
+# BACKTEST RESULTS RENDERER
+# ============================================
+def render_backtest_results(bt_results, lottery_type):
+    """Render backtest results with ranking, distribution, and detail view."""
+    if 'error' in bt_results:
+        st.error(f"❌ {bt_results['error']}")
+        return
+
+    models = bt_results.get('models', [])
+    best = bt_results.get('best_model', {})
+    total_iters = bt_results.get('total_iterations', 0)
+
+    if not models:
+        st.warning("Không có kết quả.")
+        return
+
+    # ---- Summary Card ----
+    best_name = best.get('model', 'N/A')
+    best_avg = best.get('avg_matches', 0)
+    best_max = best.get('best_score', 0)
+    best_3plus = best.get('at_least_3', 0)
+
+    st.markdown(f"""
+    <div class="result-card" style="border-color:rgba(99,102,241,0.3);box-shadow:0 0 50px rgba(99,102,241,0.15);">
+        <div style="font-size:0.9rem;color:#94a3b8;margin-bottom:8px;">🧪 Backtest: {total_iters} kỳ kiểm tra</div>
+        <div style="font-size:1.2rem;font-weight:700;color:#22c55e;margin-bottom:12px;">🏆 Phương pháp tốt nhất: {best_name}</div>
+        <div class="metric-row">
+            <div class="metric-item">
+                <div class="metric-value" style="color:#6366f1;">{best_avg:.2f}/6</div>
+                <div class="metric-label">TB Trùng</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-value" style="color:#f59e0b;">{best_max}/6</div>
+                <div class="metric-label">Max Trùng</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-value" style="color:#22c55e;">{best_3plus}%</div>
+                <div class="metric-label">Trùng 3+ số</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ---- Ranking Table ----
+    rows_html = ""
+    random_model = next((x for x in models if x['model'] == 'Random Baseline'), None)
+    random_avg = random_model['avg_matches'] if random_model else 0.8
+
+    for m in models:
+        rank = m.get('rank', 0)
+        medal = ["🥇", "🥈", "🥉"][rank - 1] if rank <= 3 else str(rank)
+        name = m.get('model', '')
+        avg = m.get('avg_matches', 0)
+        best_s = m.get('best_score', 0)
+        a3 = m.get('at_least_3', 0)
+        a2 = m.get('at_least_2', 0)
+
+        improvement = ((avg - random_avg) / random_avg * 100) if random_avg > 0 else 0
+        imp_cls = "good" if improvement > 0 else "bad"
+        imp_sign = "+" if improvement > 0 else ""
+
+        bg = "background:rgba(34,197,94,0.06);" if rank <= 3 else ""
+        is_random = "opacity:0.5;" if name == 'Random Baseline' else ""
+
+        rows_html += f"""<tr style="{bg}{is_random}">
+            <td style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);color:#e2e8f0;text-align:center;">{medal}</td>
+            <td style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);color:#e2e8f0;font-weight:600;">{name}</td>
+            <td style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);color:#6366f1;font-weight:700;font-family:JetBrains Mono,monospace;">{avg:.3f}</td>
+            <td style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);color:#f59e0b;font-weight:700;">{best_s}/6</td>
+            <td style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);color:#22c55e;">{a3}%</td>
+            <td style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);color:#94a3b8;">{a2}%</td>
+            <td style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);"><span class="{imp_cls}">{imp_sign}{improvement:.1f}%</span></td>
+        </tr>"""
+
+    th_style = 'style="background:rgba(99,102,241,0.1);padding:12px 14px;color:#06b6d4;font-weight:700;border-bottom:2px solid rgba(255,255,255,0.1);white-space:nowrap;"'
+    st.markdown(f"""
+    <div class="glass-card">
+        <div class="card-title-row">🏆 Xếp Hạng Phương Pháp Dự Đoán</div>
+        <div style="overflow-x:auto;border-radius:10px;">
+            <table style="width:100%;border-collapse:collapse;">
+                <thead><tr>
+                    <th {th_style}>#</th>
+                    <th {th_style}>Phương Pháp</th>
+                    <th {th_style}>TB/6</th>
+                    <th {th_style}>Max</th>
+                    <th {th_style}>3+</th>
+                    <th {th_style}>2+</th>
+                    <th {th_style}>vs Random</th>
+                </tr></thead>
+                <tbody>{rows_html}</tbody>
+            </table>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ---- Distribution Grid ----
+    if models and models[0].get('match_distribution'):
+        best_dist = models[0]['match_distribution']
+        total_tests = models[0].get('total_tests', 1)
+        dist_html = ""
+        colors = ['#ef4444', '#f97316', '#f59e0b', '#22c55e', '#06b6d4', '#6366f1', '#ec4899']
+        for i in range(7):
+            count = int(best_dist.get(str(i), 0))
+            pct = count / total_tests * 100 if total_tests > 0 else 0
+            color = colors[i]
+            dist_html += f'''<div style="text-align:center;padding:12px 8px;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid {color}33;">
+                <div style="font-size:1.3rem;font-weight:800;color:{color};font-family:JetBrains Mono,monospace;">{count}</div>
+                <div style="font-size:0.7rem;color:#64748b;margin-top:2px;">{pct:.1f}%</div>
+                <div style="font-size:0.75rem;font-weight:600;color:#94a3b8;margin-top:4px;">Trùng {i}</div>
+            </div>'''
+
+        st.markdown(f"""
+        <div class="glass-card">
+            <div class="card-title-row">📊 Phân Bố Trùng Số — {models[0].get('model', '')}</div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;">{dist_html}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # ---- Detail View: Recent Tests ----
+    recent = models[0].get('recent_results', []) if models else []
+    if recent:
+        detail_rows = ""
+        for idx, test in enumerate(reversed(recent)):
+            predicted = set(test.get('predicted', []))
+            actual = set(test.get('actual', []))
+            matches = test.get('matches', 0)
+
+            # Actual balls with match highlight
+            actual_balls = ""
+            for n in sorted(actual):
+                if n in predicted:
+                    actual_balls += f'<span class="match-ball">{str(n).zfill(2)}</span>'
+                else:
+                    actual_balls += f'<span class="nomatch-ball">{str(n).zfill(2)}</span>'
+
+            # Predicted balls with hit/miss
+            pred_balls = ""
+            for n in sorted(predicted):
+                if n in actual:
+                    pred_balls += f'<span class="pred-ball hit">{str(n).zfill(2)}</span>'
+                else:
+                    pred_balls += f'<span class="pred-ball miss">{str(n).zfill(2)}</span>'
+
+            match_color = '#22c55e' if matches >= 3 else '#f59e0b' if matches >= 2 else '#ef4444'
+
+            detail_rows += f'''<tr>
+                <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.06);color:#64748b;text-align:center;">{test.get('draw_index', '')}</td>
+                <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.06);"><div style="display:flex;gap:2px;flex-wrap:wrap;">{actual_balls}</div></td>
+                <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.06);"><div style="display:flex;gap:2px;flex-wrap:wrap;">{pred_balls}</div></td>
+                <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:center;font-weight:800;font-size:1.1rem;color:{match_color};font-family:JetBrains Mono,monospace;">{matches}/6</td>
+            </tr>'''
+
+        dth = 'style="background:rgba(99,102,241,0.1);padding:10px 14px;color:#06b6d4;font-weight:700;border-bottom:2px solid rgba(255,255,255,0.1);"'
+        st.markdown(f"""
+        <div class="glass-card">
+            <div class="card-title-row">🔍 Chi Tiết Các Kỳ Gần Nhất — {models[0].get('model', '')}</div>
+            <div style="overflow-x:auto;border-radius:10px;">
+                <table style="width:100%;border-collapse:collapse;">
+                    <thead><tr>
+                        <th {dth}>Kỳ</th>
+                        <th {dth}>Kết Quả Thực</th>
+                        <th {dth}>Dự Đoán</th>
+                        <th {dth}>Trùng</th>
+                    </tr></thead>
+                    <tbody>{detail_rows}</tbody>
+                </table>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# ============================================
 # DATA TAB CONTENT
 # ============================================
 def render_lottery_tab(lottery_type):
@@ -886,6 +1109,56 @@ def render_lottery_tab(lottery_type):
             dan_data = st.session_state[skey]
             if isinstance(dan_data, dict) and "candidates" in dan_data:
                 render_dan_result(dan_data, ver)
+
+    # ---- BACKTEST: KIỂM TRA PHƯƠNG PHÁP ----
+    with st.expander("🧪 Kiểm Tra Độ Chính Xác Các Phương Pháp (Backtest các kỳ trước)..."):
+        bt_col1, bt_col2 = st.columns([3, 1])
+        with bt_col1:
+            bt_tests = st.selectbox(
+                "Số kỳ kiểm tra",
+                [50, 100, 200, 500],
+                index=1,
+                key=f"bt_tests_{lottery_type}",
+                help="Số kỳ quá khứ để kiểm tra. Nhiều hơn = chính xác hơn nhưng chạy lâu hơn."
+            )
+        with bt_col2:
+            st.markdown("<br>", unsafe_allow_html=True)
+            run_bt = st.button(
+                "🚀 Chạy Backtest",
+                key=f"run_bt_{lottery_type}",
+                use_container_width=True
+            )
+
+        if run_bt:
+            with st.spinner(f"🧪 Đang chạy backtest {bt_tests} kỳ... Vui lòng chờ 1-3 phút."):
+                try:
+                    from models.backtester import BacktestEngine
+                    if lottery_type == "mega":
+                        data = get_mega645_numbers()
+                        bt_engine = BacktestEngine(45, 6)
+                    else:
+                        data = get_power655_numbers()
+                        # Power data has 7 elements (6 + bonus), slice to 6
+                        data = [d[:6] for d in data]
+                        bt_engine = BacktestEngine(55, 6)
+
+                    step_size = max(1, (len(data) - 50) // bt_tests)
+                    result = bt_engine.run_backtest(
+                        data,
+                        start_from=50,
+                        step=step_size,
+                        max_tests=bt_tests
+                    )
+                    st.session_state[f"backtest_result_{lottery_type}"] = result
+                except Exception as e:
+                    st.error(f"❌ Lỗi backtest: {e}")
+
+        # Show stored backtest result
+        if f"backtest_result_{lottery_type}" in st.session_state:
+            render_backtest_results(
+                st.session_state[f"backtest_result_{lottery_type}"],
+                lottery_type
+            )
 
     # ---- PHASE TOOLS (collapsed) ----
     with st.expander("🛠️ Công cụ phân tích chi tiết (Phase 1-7)..."):
