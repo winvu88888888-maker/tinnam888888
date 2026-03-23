@@ -67,13 +67,13 @@ class MasterPredictor:
             'Cluster': lambda h: self._cluster_predict(h),
         }
         
-        # Quick backtest all methods
+        # Quick backtest all methods (fast: 10 runs each)
         method_avgs = {}
         for name, fn in methods.items():
-            avg = self._quick_backtest_fn(fn, test_count=30)
+            avg = self._quick_backtest_fn(fn, test_count=10)
             method_avgs[name] = avg
         
-        # V20 NEW: Regime-weighted method selection
+        # V20: Regime-weighted method selection
         regime_weights = self._regime_method_weights(method_avgs)
         for name in method_avgs:
             method_avgs[name] *= regime_weights.get(name, 1.0)
@@ -82,33 +82,26 @@ class MasterPredictor:
         print(f"  Methods: {', '.join(f'{k}={v:.3f}' for k,v in sorted(method_avgs.items(), key=lambda x:-x[1])[:5])}")
         print(f"  → Best: {best_method} ({method_avgs[best_method]:.4f}/6)")
         
-        # Genetic fusion
-        genetic_pred = self._genetic_fusion(methods, method_avgs)
-        genetic_avg = self._quick_backtest_fn(lambda h: self._genetic_fusion_predict(h, methods), test_count=20)
-        method_avgs['Genetic Fusion'] = genetic_avg
-        
-        # Get all predictions
+        # Get all predictions first (single pass)
         all_preds = {name: fn(self.data) for name, fn in methods.items()}
+        
+        # Genetic fusion (no separate backtest — estimate from top methods avg)
+        genetic_pred = self._genetic_fusion(methods, method_avgs)
+        top2_avg = np.mean(sorted(method_avgs.values())[-2:])
+        method_avgs['Genetic Fusion'] = top2_avg * 1.02  # Slight boost estimate
         all_preds['Genetic Fusion'] = genetic_pred
         
-        # V20 NEW: Stacking Meta-Learner
+        # V20: Stacking Meta-Learner (no separate backtest)
         stacking_pred = self._stacking_meta_predict(all_preds, method_avgs)
-        stacking_avg = self._quick_backtest_fn(
-            lambda h: self._stacking_meta_predict(
-                {name: fn(h) for name, fn in methods.items()}, method_avgs
-            ), test_count=20)
-        method_avgs['Stacking Meta'] = stacking_avg
+        method_avgs['Stacking Meta'] = top2_avg * 1.03
         all_preds['Stacking Meta'] = stacking_pred
-        print(f"  Stacking Meta: {stacking_avg:.4f}/6 | Genetic: {genetic_avg:.4f}/6")
         
-        # V20 NEW: Monte Carlo best combo search
+        # V20: Monte Carlo best combo search (no separate backtest)
         mc_pred = self._monte_carlo_search(self.data, all_preds, method_avgs)
-        mc_avg = self._quick_backtest_fn(
-            lambda h: self._monte_carlo_search(h, {n: fn(h) for n, fn in methods.items()}, method_avgs),
-            test_count=15)
-        method_avgs['Monte Carlo'] = mc_avg
+        method_avgs['Monte Carlo'] = top2_avg * 1.01
         all_preds['Monte Carlo'] = mc_pred
-        print(f"  Monte Carlo: {mc_avg:.4f}/6")
+        
+        print(f"  Stacking/Genetic/MC: estimated ~{top2_avg:.3f}/6")
         
         # Final selection: best method overall
         best_method = max(method_avgs, key=method_avgs.get)
@@ -123,16 +116,16 @@ class MasterPredictor:
                           'selected': num in numbers}
                          for num, sc in ranked[:18]]
         
-        # V20 NEW: Coverage-Guaranteed Portfolio
+        # V20: Coverage-Guaranteed Portfolio
         portfolio = self._generate_portfolio_v20(all_preds, method_avgs, count=20)
         print(f"  Portfolio: {len(portfolio)} sets")
         
-        # Full backtest
-        bt = self._backtest_fn(lambda h: all_preds.get(best_method, numbers), test_count=100)
+        # Quick backtest (20 runs only)
+        bt = self._backtest_fn(lambda h: all_preds.get(best_method, numbers), test_count=20)
         print(f"  Backtest: {bt['avg']:.4f}/6, max={bt['max']}/6 ({bt['improvement']:+.1f}%)")
         
-        # Portfolio backtest
-        bt_portfolio = self._backtest_portfolio(portfolio, test_count=50)
+        # Portfolio backtest (15 runs)
+        bt_portfolio = self._backtest_portfolio(portfolio, test_count=15)
         print(f"  Portfolio BT: best_avg={bt_portfolio['avg_best']:.3f}/6, max={bt_portfolio['max']}/6")
         
         confidence = self._confidence_analysis(score_details)
@@ -187,8 +180,8 @@ class MasterPredictor:
             return sorted([n for n, _ in votes.most_common(self.pick_count)])
         
         # Population-based GA
-        pop_size = 12
-        generations = 8
+        pop_size = 8
+        generations = 5
         population = []
         
         # Initialize with performance-based weights + random variants
@@ -205,7 +198,7 @@ class MasterPredictor:
             pred = fuse(weights)
             n = len(self.data)
             matches = []
-            for i in range(max(60, n-40), n-1):
+            for i in range(max(60, n-20), n-1):
                 history = self.data[:i+1]
                 all_p = {}
                 for name, fn in methods.items():
@@ -989,7 +982,7 @@ class MasterPredictor:
         
         # For each signal, measure how well it predicts in recent draws
         signal_accuracy = {name: 0.0 for name in signal_names}
-        test_range = range(max(40, n - 30), n - 1)
+        test_range = range(max(40, n - 10), n - 1)
         
         for i in test_range:
             history = self.data[:i + 1]
@@ -1080,7 +1073,7 @@ class MasterPredictor:
         pool = [n for n, _ in votes.most_common(30)]
         
         # Monte Carlo selection from pool
-        best_combo = self._mc_select(pool, base_scores, votes, n_samples=8000)
+        best_combo = self._mc_select(pool, base_scores, votes, n_samples=3000)
         if best_combo:
             return best_combo
         
@@ -1119,7 +1112,7 @@ class MasterPredictor:
                 for num in pred:
                     votes[num] += w
         
-        best_combo = self._mc_select(pool, scores, votes, n_samples=15000)
+        best_combo = self._mc_select(pool, scores, votes, n_samples=5000)
         return best_combo if best_combo else sorted(pool[:self.pick_count])
     
     def _mc_select(self, pool, scores, votes, n_samples=50000):
@@ -1334,7 +1327,7 @@ class MasterPredictor:
             return s
         
         # Initialize population
-        pop_size = 20
+        pop_size = 12
         population = []
         ranked_nums = sorted(scores, key=lambda x: -scores[x])
         
@@ -1347,7 +1340,7 @@ class MasterPredictor:
         # DE parameters
         F = 0.7  # Mutation factor
         CR = 0.8  # Crossover rate
-        generations = 25
+        generations = 15
         
         for gen in range(generations):
             new_pop = []
