@@ -1,15 +1,13 @@
 """
-Master Predictor V18.0 — Genetic Fusion + Correlation Matrix + 15-Set Portfolio
-==================================================================================
-V17: Position AI + Cycle FFT + SA Optimizer + Context Match + Portfolio 10
-V18: EVERYTHING from V17 +
-     + Genetic Algorithm Weight Evolver (evolve optimal method weights)
-     + Full Correlation Matrix (pairwise conditional probabilities)
-     + Regime-Adaptive Method Selector (track which method is hot RIGHT NOW)
-     + Inverse Frequency Balancer (statistically underrepresented number boost)
-     + Multi-Draw Lookahead (predict for next 3 draws, overlap = high confidence)
-     + 15-Set Portfolio with confidence scoring per set
-     + Graph-based Maximum Coverage diversity for portfolio
+Master Predictor V19.0 — Differential Evolution + Number Clustering + 20-Set Portfolio
+========================================================================================
+V18: Genetic Fusion + Correlation Matrix + 15-Set Portfolio
+V19: EVERYTHING from V18 +
+     + Differential Evolution Optimizer (population-based global optimization)
+     + Number Co-occurrence Clustering (K-means on co-occurrence vectors)
+     + Adaptive Window Selection (auto-detect optimal lookback window per number)
+     + 20-Set Portfolio with guaranteed minimum coverage breadth
+     + 9 methods + Genetic Fusion = 10 total competing engines
 """
 import numpy as np
 from collections import Counter, defaultdict
@@ -20,9 +18,9 @@ warnings.filterwarnings('ignore')
 
 
 class MasterPredictor:
-    """V18.0: Genetic Fusion + Correlation Matrix + 15-Set Maximum Coverage."""
+    """V19.0: DE + Clustering + Adaptive Windows + 20-Set Maximum Coverage."""
     
-    VERSION = "V18.0"
+    VERSION = "V19.0"
     NUM_SIGNALS = 25
     
     def __init__(self, max_number, pick_count):
@@ -35,7 +33,7 @@ class MasterPredictor:
         self.flat = [n for d in self.data for n in d]
         n = len(self.data)
         
-        print(f"[Master V18] {n} draws — Genetic Fusion + Correlation Matrix Engine")
+        print(f"[Master V19] {n} draws — DE + Clustering + Adaptive Windows Engine")
         
         # Pre-compute all engines
         self._constraints = self._learn_constraints()
@@ -46,10 +44,12 @@ class MasterPredictor:
         self._context_scores = self._historical_context_match()
         self._corr_matrix = self._build_correlation_matrix()
         self._inverse_freq = self._inverse_frequency_balance()
+        self._clusters = self._number_clustering()
+        self._adaptive_windows = self._find_adaptive_windows()
         
-        print(f"  Engines: Constraint + N-gram + Cycle + Position + Context + Correlation + InvFreq")
+        print(f"  Engines: 9 core + Genetic Fusion | Clusters: {len(self._clusters)} groups")
         
-        # Generate from 7 methods
+        # Generate from 9 methods
         methods = {
             'Signal': lambda h: self._constraint_predict(h),
             'Ensemble': lambda h: self._ensemble_voting(h),
@@ -58,6 +58,8 @@ class MasterPredictor:
             'Context': lambda h: self._context_predict(h),
             'Corr Matrix': lambda h: self._correlation_predict(h),
             'Multi-Draw': lambda h: self._multi_draw_lookahead(h),
+            'DE Optimize': lambda h: self._de_optimize(h),
+            'Cluster': lambda h: self._cluster_predict(h),
         }
         
         # Quick backtest all methods
@@ -91,9 +93,9 @@ class MasterPredictor:
                           'selected': num in numbers}
                          for num, sc in ranked[:18]]
         
-        # Portfolio 15 sets with confidence
-        portfolio = self._generate_portfolio_v18(all_preds, count=15)
-        print(f"  Portfolio: {len(portfolio)} sets with confidence scores")
+        # Portfolio 20 sets with confidence
+        portfolio = self._generate_portfolio_v18(all_preds, count=20)
+        print(f"  Portfolio: {len(portfolio)} sets")
         
         # Full backtest
         bt = self._backtest_fn(lambda h: all_preds.get(best_method, numbers), test_count=200)
@@ -104,7 +106,7 @@ class MasterPredictor:
         print(f"  Portfolio BT: best_avg={bt_portfolio['avg_best']:.3f}/6, max={bt_portfolio['max']}/6")
         
         confidence = self._confidence_analysis(score_details)
-        print(f"[Master V18] Primary: {numbers} | Portfolio: {len(portfolio)} sets")
+        print(f"[Master V19] Primary: {numbers} | Portfolio: {len(portfolio)} sets")
         
         return {
             'numbers': numbers,
@@ -115,7 +117,7 @@ class MasterPredictor:
             'portfolio_backtest': bt_portfolio,
             'confidence': confidence,
             'version': self.VERSION,
-            'method': f'Master AI V18 ({n} draws, {best_method}, {len(portfolio)} portfolio, {bt["tests"]} tested)',
+            'method': f'Master AI V19 ({n} draws, {best_method}, {len(portfolio)} portfolio, {bt["tests"]} tested)',
             'ensemble_info': {
                 'base_avg': round(method_avgs.get('Signal', 0), 4),
                 'ensemble_avg': round(method_avgs.get('Ensemble', 0), 4),
@@ -124,6 +126,8 @@ class MasterPredictor:
                 'context_avg': round(method_avgs.get('Context', 0), 4),
                 'corr_avg': round(method_avgs.get('Corr Matrix', 0), 4),
                 'genetic_avg': round(method_avgs.get('Genetic Fusion', 0), 4),
+                'de_avg': round(method_avgs.get('DE Optimize', 0), 4),
+                'cluster_avg': round(method_avgs.get('Cluster', 0), 4),
                 'chosen': best_method,
             },
             'constraints': self._constraints,
@@ -985,3 +989,205 @@ class MasterPredictor:
         cs = avg_c*0.6+min_c*0.3+min(gap*10,10)*0.1
         level = 'high' if cs>=70 else ('medium' if cs>=40 else 'low')
         return {'level':level,'score':round(cs,1),'avg_confidence':round(avg_c,1),'min_confidence':round(min_c,1)}
+    
+    # ==========================================
+    # DIFFERENTIAL EVOLUTION OPTIMIZER (V19 NEW)
+    # ==========================================
+    def _de_optimize(self, history):
+        """Differential Evolution: population-based global optimization for 6-number combo."""
+        scores = self._score_numbers(history)
+        all_nums = list(range(1, self.max_number + 1))
+        
+        def combo_score(combo):
+            s = sum(scores.get(n, 0) for n in combo)
+            for a, b in combinations(combo, 2):
+                s += sum(1 for d in history[-50:] if a in d and b in d) * 0.15
+            if hasattr(self, '_corr_matrix'):
+                last = set(history[-1])
+                for n in combo:
+                    for prev in last:
+                        s += self._corr_matrix.get(prev, {}).get(n, 0) * 2
+            if not self._validate_combo(combo): s -= 50
+            return s
+        
+        # Initialize population
+        pop_size = 30
+        population = []
+        ranked_nums = sorted(scores, key=lambda x: -scores[x])
+        
+        for _ in range(pop_size):
+            # Random from top 25 numbers
+            pool = ranked_nums[:25]
+            idx = np.random.choice(len(pool), self.pick_count, replace=False)
+            population.append(sorted([pool[i] for i in idx]))
+        
+        # DE parameters
+        F = 0.7  # Mutation factor
+        CR = 0.8  # Crossover rate
+        generations = 50
+        
+        for gen in range(generations):
+            new_pop = []
+            for i in range(pop_size):
+                # Select 3 distinct individuals
+                candidates = [j for j in range(pop_size) if j != i]
+                a, b, c = [population[j] for j in np.random.choice(candidates, 3, replace=False)]
+                
+                # Mutation: create donor vector
+                a_set, b_set, c_set = set(a), set(b), set(c)
+                # Numbers in a but not in b → "add direction", numbers in b but not in c → "subtract"
+                donor_pool = list((a_set | c_set) - b_set) + list(a_set & c_set)
+                if not donor_pool:
+                    donor_pool = ranked_nums[:20]
+                
+                # Crossover
+                trial = list(population[i])
+                for j in range(self.pick_count):
+                    if np.random.random() < CR:
+                        # Replace with random from donor pool
+                        new_nums = [n for n in donor_pool if n not in trial]
+                        if new_nums:
+                            trial[j] = new_nums[np.random.randint(0, len(new_nums))]
+                
+                trial = sorted(set(trial))
+                # Fix length
+                while len(trial) < self.pick_count:
+                    candidates = [n for n in all_nums if n not in trial]
+                    trial.append(candidates[np.random.randint(0, len(candidates))])
+                trial = sorted(trial[:self.pick_count])
+                
+                # Selection
+                if combo_score(trial) > combo_score(population[i]):
+                    new_pop.append(trial)
+                else:
+                    new_pop.append(population[i])
+            
+            population = new_pop
+        
+        # Return best individual
+        best = max(population, key=combo_score)
+        return sorted(best)
+    
+    # ==========================================
+    # NUMBER CO-OCCURRENCE CLUSTERING (V19 NEW)
+    # ==========================================
+    def _number_clustering(self):
+        """Cluster numbers by co-occurrence patterns (simple K-means)."""
+        n = len(self.data)
+        if n < 50:
+            return {i: 0 for i in range(1, self.max_number + 1)}
+        
+        # Build co-occurrence matrix
+        co_matrix = np.zeros((self.max_number, self.max_number))
+        for d in self.data[-100:]:
+            for a in d:
+                for b in d:
+                    if a != b:
+                        co_matrix[a-1][b-1] += 1
+        
+        # Normalize rows
+        row_sums = co_matrix.sum(axis=1, keepdims=True)
+        row_sums[row_sums == 0] = 1
+        co_matrix = co_matrix / row_sums
+        
+        # Simple K-means clustering (K=5 clusters)
+        K = 5
+        # Initialize centroids randomly
+        centroid_idx = np.random.choice(self.max_number, K, replace=False)
+        centroids = co_matrix[centroid_idx].copy()
+        
+        labels = np.zeros(self.max_number, dtype=int)
+        
+        for _ in range(20):  # Max iterations
+            # Assign labels
+            for i in range(self.max_number):
+                dists = [np.sum((co_matrix[i] - centroids[k]) ** 2) for k in range(K)]
+                labels[i] = np.argmin(dists)
+            
+            # Update centroids
+            for k in range(K):
+                members = co_matrix[labels == k]
+                if len(members) > 0:
+                    centroids[k] = members.mean(axis=0)
+        
+        return {i+1: int(labels[i]) for i in range(self.max_number)}
+    
+    def _cluster_predict(self, history):
+        """Predict using cluster-based selection: pick from hot clusters."""
+        last = set(history[-1])
+        clusters = self._clusters if hasattr(self, '_clusters') else {}
+        
+        if not clusters:
+            return self._constraint_predict(history)
+        
+        # Find which clusters were active in last draw
+        active_clusters = Counter()
+        for n in last:
+            active_clusters[clusters.get(n, 0)] += 1
+        
+        # For each cluster, score its members
+        scores = self._score_numbers(history)
+        
+        # Boost numbers in active clusters
+        for num in range(1, self.max_number + 1):
+            c = clusters.get(num, 0)
+            if c in active_clusters:
+                scores[num] = scores.get(num, 0) + active_clusters[c] * 1.5
+        
+        # Anti-repeat
+        for n in last:
+            scores[n] = scores.get(n, 0) - 5
+        
+        ranked = sorted(scores.items(), key=lambda x: -x[1])
+        pool = [n for n, _ in ranked[:20]]
+        
+        # Constraint-validated
+        best_combo, best_score = None, -float('inf')
+        for combo in combinations(pool, self.pick_count):
+            if not self._validate_combo(combo): continue
+            cs = sum(scores[n] for n in combo)
+            if cs > best_score:
+                best_score = cs
+                best_combo = sorted(combo)
+        
+        return best_combo if best_combo else sorted(pool[:self.pick_count])
+    
+    # ==========================================
+    # ADAPTIVE WINDOW SELECTION (V19 NEW)
+    # ==========================================
+    def _find_adaptive_windows(self):
+        """Find optimal lookback window per number based on prediction accuracy."""
+        n = len(self.data)
+        if n < 100:
+            return {num: 30 for num in range(1, self.max_number + 1)}
+        
+        windows = [10, 15, 20, 30, 50, 75, 100]
+        best_windows = {}
+        
+        for num in range(1, self.max_number + 1):
+            best_w = 30
+            best_accuracy = 0
+            
+            for w in windows:
+                # How well does this window predict appearances?
+                correct = 0
+                total = 0
+                for i in range(max(w, 50), n - 1):
+                    freq = sum(1 for d in self.data[i-w:i] if num in d) / w
+                    expected = self.pick_count / self.max_number
+                    predicted_appear = freq > expected * 1.1
+                    actually_appeared = num in self.data[i]
+                    if predicted_appear == actually_appeared:
+                        correct += 1
+                    total += 1
+                
+                if total > 0:
+                    accuracy = correct / total
+                    if accuracy > best_accuracy:
+                        best_accuracy = accuracy
+                        best_w = w
+            
+            best_windows[num] = best_w
+        
+        return best_windows
+

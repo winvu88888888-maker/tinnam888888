@@ -1,6 +1,6 @@
 """
-📊 TinNam AI - Data Analysis Platform V18
-Premium dark-themed UI with 70+ models + Genetic Fusion + 15-Set Portfolio.
+📊 TinNam AI - Data Analysis Platform V19
+Premium dark-themed UI with 70+ models + DE + Clustering + 20-Set Portfolio.
 Deploy: streamlit run streamlit_app.py
 """
 import streamlit as st
@@ -504,9 +504,11 @@ def render_master_result(data):
             ('Context', 'context_avg', '#06b6d4'),
             ('Corr', 'corr_avg', '#a78bfa'),
             ('Genetic', 'genetic_avg', '#f43f5e'),
+            ('DE', 'de_avg', '#84cc16'),
+            ('Cluster', 'cluster_avg', '#fb923c'),
         ]
         method_html = '<div class="glass-card" style="border-color:#8b5cf6;">'
-        method_html += '<div class="card-title-row">🧠 V18 Auto-Selection (7 Methods + Genetic Fusion)</div>'
+        method_html += '<div class="card-title-row">🧠 V19 Auto-Selection (9 Methods + Genetic Fusion)</div>'
         method_html += '<div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">'
         for label, key, color in method_items:
             val = ens_info.get(key, 0)
@@ -1127,7 +1129,7 @@ def render_lottery_tab(lottery_type):
     # ---- MASTER PREDICTION ----
     st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
     if st.button(f"🎯 DỰ ĐOÁN KỲ TIẾP THEO", key=f"master_{lottery_type}", type="primary", use_container_width=True):
-        with st.spinner("🎯 V18 Genetic Fusion: 7 engines + Portfolio 15 bộ... Vui lòng chờ 5-10 phút."):
+        with st.spinner("🎯 V19: 10 engines (DE + Clustering + Genetic) + Portfolio 20 bộ... Vui lòng chờ 5-12 phút."):
             try:
                 from models.master_predictor import MasterPredictor
                 if lottery_type == "mega":
@@ -1418,7 +1420,7 @@ def main():
     mega_latest = get_latest_date("mega")
 
     st.markdown('<div class="main-title">📊 TinNam AI - Phân Tích Dữ Liệu</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtitle">V18 — Genetic Fusion + Correlation Matrix + 15-Set Portfolio | Maximum Coverage AI</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtitle">V19 — Differential Evolution + Number Clustering + 20-Set Portfolio | 10 Competing Engines</div>', unsafe_allow_html=True)
 
     st.markdown(f"""
     <div class="stat-row">
