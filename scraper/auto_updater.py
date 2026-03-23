@@ -147,10 +147,23 @@ def auto_update_data():
                 'power_count': power_before,
                 'mega_new': 0,
                 'power_new': 0,
-                'message': 'Auto-update không khả dụng trên cloud. Dùng data hiện có.',
+                'message': f'Dùng data hiện có. Mega: {mega_before} kỳ, Power: {power_before} kỳ.',
             }
 
-        driver = create_driver()
+        try:
+            driver = create_driver()
+        except Exception:
+            # ChromeDriver not available (Streamlit Cloud) — skip gracefully
+            _save_update_time()
+            return {
+                'status': 'skipped',
+                'mega_count': mega_before,
+                'power_count': power_before,
+                'mega_new': 0,
+                'power_new': 0,
+                'message': f'Dùng data hiện có. Mega: {mega_before} kỳ, Power: {power_before} kỳ.',
+            }
+
         try:
             scrape_mega645(driver)
             scrape_power655(driver)
@@ -190,13 +203,12 @@ def auto_update_data():
         mega_c = get_count('mega')
         power_c = get_count('power')
         return {
-            'status': 'error',
+            'status': 'skipped',
             'mega_count': mega_c,
             'power_count': power_c,
             'mega_new': 0,
             'power_new': 0,
-            'message': f'⚠️ Cập nhật thất bại: {str(e)[:100]}',
-            'error': str(e),
+            'message': f'Dùng data hiện có. Mega: {mega_c} kỳ, Power: {power_c} kỳ.',
         }
     finally:
         _update_lock.release()
