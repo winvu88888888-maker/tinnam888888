@@ -1,14 +1,16 @@
 """
-Master Predictor V20.0 — Attention + Regime Detection + Stacking Meta-Learner
+Master Predictor V21.0 — Deep Pattern + Entropy + True Attention
 =============================================================================
-V19: DE + Clustering + Adaptive Windows + 20-Set Portfolio
-V20: EVERYTHING from V19 +
-     + Attention-Based Signal Weighting (learn per-signal weights from backtest)
-     + Regime Detection (Hot/Cold/Transition → adapt strategy selection)
-     + Monte Carlo Combo Search (50K samples from top 30 candidates)
-     + Stacking Meta-Learner (weighted vote matrix with agreement bonus)
-     + Coverage-Guaranteed Portfolio (≥85% coverage of top 30)
-     + 11 methods total (9 core + Genetic Fusion + Stacking Meta)
+V20: Attention + Regime + Stacking + Monte Carlo + Coverage Portfolio
+V21: EVERYTHING from V20 +
+     + TRUE Attention Scoring (attention weights ACTUALLY applied in _score_numbers)
+     + Triplet Co-occurrence Mining (3-number groups, not just pairs)
+     + Adaptive Anti-Repeat (regime-aware penalty strength)
+     + Sequential Pattern Chain (3-5 draw pattern matching)
+     + Reinforcement Method Selection (20 runs + EMA + variance penalty)
+     + Combinatorial Coverage Portfolio (≥90% coverage, differ ≥3)
+     + Entropy-Guided Number Selection (low entropy = more predictable)
+     + 12 methods total (9 core + Genetic + Stacking + Monte Carlo)
 """
 import numpy as np
 from collections import Counter, defaultdict
@@ -19,9 +21,9 @@ warnings.filterwarnings('ignore')
 
 
 class MasterPredictor:
-    """V20.0: Attention + Regime + Stacking Meta-Learner + Monte Carlo + Coverage Portfolio."""
+    """V21.0: Deep Pattern + Entropy + True Attention + Coverage Portfolio."""
     
-    VERSION = "V20.0"
+    VERSION = "V21.0"
     NUM_SIGNALS = 25
     
     def __init__(self, max_number, pick_count):
@@ -29,7 +31,7 @@ class MasterPredictor:
         self.pick_count = pick_count
     
     def predict(self, data):
-        """Main prediction pipeline — V20."""
+        """Main prediction pipeline — V21."""
         self.data = [d[:self.pick_count] for d in data]
         self.flat = [n for d in self.data for n in d]
         n = len(self.data)
@@ -46,13 +48,22 @@ class MasterPredictor:
         self._clusters = self._number_clustering()
         self._adaptive_windows = self._find_adaptive_windows()
         
-        # V20 NEW: Regime detection
+        # V20: Regime detection
         self._regime = self._detect_regime()
         
-        # V20 NEW: Attention signal weights
+        # V20: Attention signal weights
         self._attention_weights = self._learn_attention_weights()
         
-        print(f"[Master V20] {n} draws | Regime: {self._regime['type']} | Clusters: {len(self._clusters)} groups")
+        # V21 NEW: Triplet co-occurrence
+        self._triplet_scores = self._triplet_mining()
+        
+        # V21 NEW: Sequential pattern chains
+        self._seq_pattern_scores = self._sequential_pattern_chain()
+        
+        # V21 NEW: Entropy per number
+        self._entropy_scores = self._compute_entropy_scores()
+        
+        print(f"[Master V21] {n} draws | Regime: {self._regime['type']} | Clusters: {len(self._clusters)} groups")
         
         # 9 core methods
         methods = {
@@ -67,20 +78,24 @@ class MasterPredictor:
             'Cluster': lambda h: self._cluster_predict(h),
         }
         
-        # Quick backtest all methods (fast: 10 runs each)
+        # V21: Reinforcement method selection (20 runs + EMA + variance penalty)
         method_avgs = {}
+        method_vars = {}
         for name, fn in methods.items():
-            avg = self._quick_backtest_fn(fn, test_count=10)
+            avg, var = self._reinforcement_backtest(fn, test_count=20)
             method_avgs[name] = avg
+            method_vars[name] = var
         
         # V20: Regime-weighted method selection
         regime_weights = self._regime_method_weights(method_avgs)
         for name in method_avgs:
             method_avgs[name] *= regime_weights.get(name, 1.0)
+            # V21: Variance penalty — high variance = unreliable
+            method_avgs[name] -= method_vars.get(name, 0) * 0.3
         
         best_method = max(method_avgs, key=method_avgs.get)
         print(f"  Methods: {', '.join(f'{k}={v:.3f}' for k,v in sorted(method_avgs.items(), key=lambda x:-x[1])[:5])}")
-        print(f"  → Best: {best_method} ({method_avgs[best_method]:.4f}/6)")
+        print(f"  -> Best: {best_method} ({method_avgs[best_method]:.4f}/6)")
         
         # Get all predictions first (single pass)
         all_preds = {name: fn(self.data) for name, fn in methods.items()}
@@ -116,8 +131,8 @@ class MasterPredictor:
                           'selected': num in numbers}
                          for num, sc in ranked[:18]]
         
-        # V20: Coverage-Guaranteed Portfolio
-        portfolio = self._generate_portfolio_v20(all_preds, method_avgs, count=20)
+        # V21: Combinatorial Coverage Portfolio (≥90%, differ ≥3)
+        portfolio = self._generate_portfolio_v21(all_preds, method_avgs, count=20)
         print(f"  Portfolio: {len(portfolio)} sets")
         
         # Quick backtest (20 runs only)
@@ -129,7 +144,15 @@ class MasterPredictor:
         print(f"  Portfolio BT: best_avg={bt_portfolio['avg_best']:.3f}/6, max={bt_portfolio['max']}/6")
         
         confidence = self._confidence_analysis(score_details)
-        print(f"[Master V20] Primary: {numbers} | Regime: {self._regime['type']} | Methods: {len(method_avgs)}")
+        
+        # V21: Coverage stats
+        top30 = set(n for n, _ in ranked[:30])
+        covered_nums = set()
+        for p in portfolio:
+            covered_nums.update(set(p['numbers']) & top30)
+        coverage_pct = round(len(covered_nums) / max(len(top30), 1) * 100, 1)
+        
+        print(f"[Master V21] Primary: {numbers} | Regime: {self._regime['type']} | Coverage: {coverage_pct}%")
         
         return {
             'numbers': numbers,
@@ -140,7 +163,7 @@ class MasterPredictor:
             'portfolio_backtest': bt_portfolio,
             'confidence': confidence,
             'version': self.VERSION,
-            'method': f'Master AI V20 ({n} draws, {best_method}, {self._regime["type"]}, {len(portfolio)} portfolio)',
+            'method': f'Master AI V21 ({n} draws, {best_method}, {self._regime["type"]}, {len(portfolio)} portfolio, {coverage_pct}% coverage)',
             'regime': self._regime,
             'ensemble_info': {
                 'base_avg': round(method_avgs.get('Signal', 0), 4),
@@ -158,6 +181,7 @@ class MasterPredictor:
             },
             'constraints': self._constraints,
             'attention_weights': {k: round(v, 3) for k, v in self._attention_weights.items()},
+            'coverage_pct': coverage_pct,
         }
     
     # ==========================================
@@ -652,6 +676,14 @@ class MasterPredictor:
         cycles = self._cycle_scores if hasattr(self, '_cycle_scores') else {}
         context = self._context_scores if hasattr(self, '_context_scores') else {}
         inv_freq = self._inverse_freq if hasattr(self, '_inverse_freq') else {}
+        triplet = self._triplet_scores if hasattr(self, '_triplet_scores') else {}
+        seq_pat = self._seq_pattern_scores if hasattr(self, '_seq_pattern_scores') else {}
+        entropy = self._entropy_scores if hasattr(self, '_entropy_scores') else {}
+        
+        # V21: Get attention weights (or defaults)
+        attn = self._attention_weights if hasattr(self, '_attention_weights') else {}
+        def aw(signal_name, default=1.0):
+            return attn.get(signal_name, default)
         
         col_pool = set()
         if hasattr(self, '_column_pool'):
@@ -661,21 +693,33 @@ class MasterPredictor:
         if n_draws >= 20:
             repeats = sum(len(set(history[i]) & set(history[i+1])) for i in range(max(0, n_draws-20), n_draws-1))
             repeat_rate = repeats / (20 * self.pick_count)
+        
+        # V21: Adaptive anti-repeat based on regime
+        regime_type = self._regime.get('type', 'Transition') if hasattr(self, '_regime') else 'Transition'
+        if regime_type == 'Hot':
+            anti_penalty = 3.0  # Hot: numbers repeat → lighter penalty
+        elif regime_type == 'Cold':
+            anti_penalty = 8.0  # Cold: numbers spread → heavier penalty
+        else:
+            anti_penalty = 5.0  # Transition: default
         anti_str = 1.0 - min(repeat_rate * 5, 0.5)
         
         max_knn = max(knn_scores.values()) if knn_scores else 1
         max_ctx = max(context.values()) if context else 1
+        max_trip = max(triplet.values()) if triplet else 1
+        max_seq = max(seq_pat.values()) if seq_pat else 1
         
         for num in range(1, self.max_number + 1):
             s = 0.0
-            s += freq_10.get(num, 0) / 10 * 3.0
-            s += freq_30.get(num, 0) / 30 * 2.0
-            s += freq_50.get(num, 0) / 50 * 1.5
+            # V21: Apply attention weights to each signal
+            s += freq_10.get(num, 0) / 10 * 3.0 * aw('freq_short')
+            s += freq_30.get(num, 0) / 30 * 2.0 * aw('freq_mid')
+            s += freq_50.get(num, 0) / 50 * 1.5 * aw('freq_long', 1.0)
             gap = n_draws - last_seen.get(num, 0)
-            s += max(0, gap / exp_gap - 0.8) * 2.5
-            if num in last: s -= 5 * anti_str
-            s += (r10.get(num, 0) - p10.get(num, 0)) / 5 * 2.0
-            s += knn_scores.get(num, 0) / max(1, max_knn) * 2.5
+            s += max(0, gap / exp_gap - 0.8) * 2.5 * aw('gap')
+            if num in last: s -= anti_penalty * anti_str  # V21: Adaptive
+            s += (r10.get(num, 0) - p10.get(num, 0)) / 5 * 2.0 * aw('momentum')
+            s += knn_scores.get(num, 0) / max(1, max_knn) * 2.5 * aw('knn')
             f_r = sum(1 for d in history[-15:] if num in d) / 15
             f_o = sum(1 for d in history[-45:-15] if num in d) / 30 if n_draws > 45 else f_r
             s += max(0, f_r - f_o) * 10
@@ -684,37 +728,43 @@ class MasterPredictor:
                 if num not in d: curr_abs += 1
                 else: break
             if curr_abs > 0:
-                seq = [1 if num in d else 0 for d in history]
+                seq_arr = [1 if num in d else 0 for d in history]
                 abs_runs = []
                 run = 0
-                for sv in seq:
+                for sv in seq_arr:
                     if sv == 0: run += 1
                     else:
                         if run > 0: abs_runs.append(run)
                         run = 0
                 avg_a = np.mean(abs_runs) if abs_runs else exp_gap
                 if avg_a > 0:
-                    s += 1 / (1 + math.exp(-3 * (curr_abs / avg_a - 0.8))) * 2.0
+                    s += 1 / (1 + math.exp(-3 * (curr_abs / avg_a - 0.8))) * 2.0 * aw('run_length', 1.0)
             if col_pool: s += 2.0 if num in col_pool else -0.3
-            s += ngram.get(num, 0) * 3.0
+            s += ngram.get(num, 0) * 3.0 * aw('ngram', 1.0)
             f5 = sum(1 for d in history[-5:] if num in d) / 5
             f15 = sum(1 for d in history[-15:] if num in d) / 15
             f30 = sum(1 for d in history[-30:] if num in d) / 30
             v1, v2 = f5 - f15, f15 - f30
-            s += (v1 + (v1 - v2) * 0.5) * 2.0
+            s += (v1 + (v1 - v2) * 0.5) * 2.0 * aw('multi_scale', 1.0)
             scales = [5, 10, 20, 50, 100]
             appear = sum(1 for sc in scales if n_draws >= sc and any(num in d for d in history[-sc:]))
             s += max(0, (appear - 3)) * 0.5
             pair_b = sum(sum(1 for d in history[-50:] if num in d and n in d) for n in last)
-            s += pair_b / max(1, len(last) * 50) * 3.0
-            s += cycles.get(num, 0) * 2.0
-            s += context.get(num, 0) / max(1, max_ctx) * 3.0
+            s += pair_b / max(1, len(last) * 50) * 3.0 * aw('pair', 1.0)
+            s += cycles.get(num, 0) * 2.0 * aw('cycle', 1.0)
+            s += context.get(num, 0) / max(1, max_ctx) * 3.0 * aw('context', 1.0)
             # V18: Inverse frequency
-            s += inv_freq.get(num, 0) * 1.5
+            s += inv_freq.get(num, 0) * 1.5 * aw('inverse_freq', 1.0)
             # V18: Correlation bonus
             if hasattr(self, '_corr_matrix'):
                 corr_b = sum(self._corr_matrix.get(prev, {}).get(num, 0) for prev in last)
-                s += corr_b * 2.0
+                s += corr_b * 2.0 * aw('correlation', 1.0)
+            # V21 NEW: Triplet co-occurrence bonus
+            s += triplet.get(num, 0) / max(1, max_trip) * 2.5
+            # V21 NEW: Sequential pattern bonus
+            s += seq_pat.get(num, 0) / max(1, max_seq) * 3.0
+            # V21 NEW: Entropy bonus (low entropy = more predictable = bonus)
+            s += entropy.get(num, 0) * 1.5
             scores[num] = s
         return scores
     
@@ -1033,6 +1083,131 @@ class MasterPredictor:
         return signal_accuracy
     
     # ==========================================
+    # TRIPLET CO-OCCURRENCE MINING (V21 NEW)
+    # ==========================================
+    def _triplet_mining(self):
+        """Find 3-number groups that frequently appear together."""
+        n = len(self.data)
+        if n < 50:
+            return {}
+        
+        window = self.data[-100:] if n > 100 else self.data
+        last = set(self.data[-1])
+        
+        # Count triplet occurrences (limit to reasonable combos)
+        triplet_freq = Counter()
+        for d in window:
+            sd = sorted(d)
+            for trip in combinations(sd, 3):
+                triplet_freq[trip] += 1
+        
+        # Find triplets containing numbers from last draw
+        scores = Counter()
+        for trip, count in triplet_freq.most_common(200):
+            if count < 2:
+                break
+            trip_set = set(trip)
+            overlap = trip_set & last
+            if len(overlap) >= 2:
+                # 2 of 3 in last draw → boost the 3rd number
+                missing = trip_set - last
+                for num in missing:
+                    scores[num] += count * len(overlap)
+            elif len(overlap) == 1:
+                for num in trip_set - last:
+                    scores[num] += count * 0.3
+        
+        return dict(scores)
+    
+    # ==========================================
+    # SEQUENTIAL PATTERN CHAIN (V21 NEW)
+    # ==========================================
+    def _sequential_pattern_chain(self):
+        """Match sequences of 3-5 draws to historical patterns."""
+        n = len(self.data)
+        if n < 30:
+            return {}
+        
+        scores = Counter()
+        
+        # For chain lengths 3, 4, 5
+        for chain_len in [3, 4, 5]:
+            if n < chain_len + 1:
+                continue
+            
+            # Current chain (last chain_len draws)
+            current_chain = self.data[-chain_len:]
+            current_signatures = [frozenset(d) for d in current_chain]
+            
+            # Search for similar chains in history
+            weight = chain_len  # Longer chain = stronger signal
+            for i in range(chain_len, n - chain_len):
+                hist_chain = self.data[i-chain_len:i]
+                hist_signatures = [frozenset(d) for d in hist_chain]
+                
+                # Calculate chain similarity
+                similarity = sum(
+                    len(current_signatures[j] & hist_signatures[j])
+                    for j in range(chain_len)
+                )
+                
+                threshold = chain_len * 2  # At least 2 matches per draw on average
+                if similarity >= threshold and i < n - 1:
+                    # Found similar chain → use what came next
+                    next_draw = self.data[i]
+                    for num in next_draw:
+                        if num not in self.data[-1]:  # Skip repeats
+                            scores[num] += similarity * weight * 0.1
+        
+        return dict(scores)
+    
+    # ==========================================
+    # ENTROPY-GUIDED SCORING (V21 NEW)
+    # ==========================================
+    def _compute_entropy_scores(self):
+        """Compute predictability score: low entropy = more predictable = bonus."""
+        n = len(self.data)
+        if n < 60:
+            return {}
+        
+        scores = {}
+        for num in range(1, self.max_number + 1):
+            # Binary sequence: appeared or not in last 60 draws
+            seq = [1 if num in d else 0 for d in self.data[-60:]]
+            
+            # Transition probabilities: P(next state | current state)
+            trans = {0: [0, 0], 1: [0, 0]}  # state -> [count_to_0, count_to_1]
+            for i in range(1, len(seq)):
+                trans[seq[i-1]][seq[i]] += 1
+            
+            # Compute transition entropy
+            entropy = 0
+            for state in [0, 1]:
+                total = sum(trans[state])
+                if total == 0:
+                    continue
+                for count in trans[state]:
+                    if count > 0:
+                        p = count / total
+                        entropy -= p * math.log2(p) * (total / len(seq))
+            
+            # Current state prediction
+            current_state = seq[-1]
+            total = sum(trans[current_state])
+            if total > 0:
+                prob_appear = trans[current_state][1] / total
+            else:
+                prob_appear = self.pick_count / self.max_number
+            
+            # Score: high prob_appear + low entropy = best
+            # Normalize: entropy is 0-1, prob is 0-1
+            max_entropy = 1.0
+            predictability = max(0, 1.0 - entropy / max(max_entropy, 0.01))
+            scores[num] = prob_appear * predictability
+        
+        return scores
+    
+    # ==========================================
     # STACKING META-LEARNER (V20 NEW)
     # ==========================================
     def _stacking_meta_predict(self, all_preds, method_avgs):
@@ -1233,8 +1408,171 @@ class MasterPredictor:
         return portfolio[:count]
     
     # ==========================================
+    # PORTFOLIO V21 — Combinatorial Coverage ≥90%, differ ≥3
+    # ==========================================
+    def _generate_portfolio_v21(self, all_preds, method_avgs, count=20):
+        """V21 Portfolio: ≥90% coverage of top 30, each pair differs ≥3 numbers."""
+        scores = self._score_numbers(self.data)
+        pool = [n for n, _ in sorted(scores.items(), key=lambda x: -x[1])[:30]]
+        top30_set = set(pool)
+        
+        portfolio = []
+        used_tuples = set()
+        covered = set()
+        
+        def differ_ok(combo, min_diff=3):
+            """Check that combo differs by ≥min_diff numbers from ALL existing sets."""
+            cs = set(combo)
+            return all(len(cs - set(ex['numbers'])) >= min_diff for ex in portfolio)
+        
+        # Phase 1: Add all method predictions (sorted by performance)
+        method_order = sorted(all_preds.keys(), key=lambda k: -method_avgs.get(k, 0))
+        for name in method_order:
+            pred = all_preds.get(name)
+            if pred is None:
+                continue
+            t = tuple(sorted(pred))
+            if t not in used_tuples and self._validate_combo(pred):
+                if not portfolio or differ_ok(pred):
+                    conf = sum(scores.get(n, 0) for n in pred) / max(1, sum(scores.get(n, 0) for n in pool[:self.pick_count]))
+                    portfolio.append({'numbers': sorted(pred), 'confidence': round(min(conf * 100, 100), 1), 'method': name})
+                    used_tuples.add(t)
+                    covered.update(set(pred) & top30_set)
+        
+        # Phase 2: Covering Design — divide top 30 into 5 groups, ensure each has ≥3 sets
+        n_groups = 5
+        group_size = max(1, len(pool) // n_groups)
+        groups = [pool[i*group_size:(i+1)*group_size] for i in range(n_groups)]
+        # Last group gets remainders
+        if len(pool) > n_groups * group_size:
+            groups[-1].extend(pool[n_groups * group_size:])
+        
+        group_coverage = [0] * n_groups
+        for p in portfolio:
+            pset = set(p['numbers'])
+            for gi, grp in enumerate(groups):
+                if pset & set(grp):
+                    group_coverage[gi] += 1
+        
+        # Generate sets targeting under-represented groups
+        attempts = 0
+        while len(portfolio) < count and attempts < 1000:
+            attempts += 1
+            # Find group with least coverage
+            weakest_gi = min(range(n_groups), key=lambda gi: group_coverage[gi])
+            weak_group = groups[weakest_gi]
+            
+            # Pick 2-3 from weak group + rest from top pool
+            n_from_weak = min(3, len(weak_group), self.pick_count)
+            if n_from_weak == 0:
+                continue
+            chosen_weak = list(np.random.choice(weak_group, n_from_weak, replace=False))
+            remaining = [n for n in pool if n not in chosen_weak]
+            np.random.shuffle(remaining)
+            combo = sorted(set(chosen_weak + remaining[:self.pick_count - n_from_weak]))
+            
+            if len(combo) != self.pick_count:
+                continue
+            t = tuple(combo)
+            if t in used_tuples:
+                continue
+            if not self._validate_combo(combo):
+                continue
+            if not differ_ok(combo, min_diff=3):
+                continue
+            
+            conf = sum(scores.get(n, 0) for n in combo) / max(1, sum(scores.get(n, 0) for n in pool[:self.pick_count]))
+            portfolio.append({'numbers': combo, 'confidence': round(min(conf * 100, 100), 1), 'method': 'Covering'})
+            used_tuples.add(t)
+            covered.update(set(combo) & top30_set)
+            for gi, grp in enumerate(groups):
+                if set(combo) & set(grp):
+                    group_coverage[gi] += 1
+        
+        # Phase 3: Coverage-focused — ensure ≥90% of top 30 is covered
+        coverage_target = int(len(top30_set) * 0.90)
+        attempts = 0
+        while len(covered) < coverage_target and len(portfolio) < count and attempts < 500:
+            attempts += 1
+            uncovered = list(top30_set - covered)
+            if not uncovered:
+                break
+            n_uncov = min(3, len(uncovered), self.pick_count)
+            chosen_uncov = list(np.random.choice(uncovered, n_uncov, replace=False))
+            remaining = [n for n in pool if n not in chosen_uncov]
+            np.random.shuffle(remaining)
+            combo = sorted(set(chosen_uncov + remaining[:self.pick_count - n_uncov]))
+            if len(combo) != self.pick_count:
+                continue
+            t = tuple(combo)
+            if t in used_tuples:
+                continue
+            if not self._validate_combo(combo):
+                continue
+            if not differ_ok(combo, min_diff=3):
+                continue
+            conf = sum(scores.get(n, 0) for n in combo) / max(1, sum(scores.get(n, 0) for n in pool[:self.pick_count]))
+            portfolio.append({'numbers': combo, 'confidence': round(min(conf * 100, 100), 1), 'method': 'Coverage'})
+            used_tuples.add(t)
+            covered.update(set(combo) & top30_set)
+        
+        # Phase 4: Diversity fill (differ ≥3)
+        attempts = 0
+        while len(portfolio) < count and attempts < 2000:
+            attempts += 1
+            if portfolio:
+                base = list(portfolio[np.random.randint(0, len(portfolio))]['numbers'])
+            else:
+                base = pool[:self.pick_count]
+            n_rep = np.random.randint(3, min(5, self.pick_count) + 1)  # Replace 3-4 numbers
+            combo = list(base)
+            for _ in range(n_rep):
+                idx = np.random.randint(0, len(combo))
+                cands = [n for n in pool if n not in combo]
+                if not cands:
+                    cands = [n for n in range(1, self.max_number + 1) if n not in combo]
+                combo[idx] = cands[np.random.randint(0, len(cands))]
+            combo = sorted(set(combo))
+            if len(combo) != self.pick_count:
+                continue
+            t = tuple(combo)
+            if t in used_tuples:
+                continue
+            if not self._validate_combo(combo):
+                continue
+            if not differ_ok(combo, min_diff=3):
+                continue
+            conf = sum(scores.get(n, 0) for n in combo) / max(1, sum(scores.get(n, 0) for n in pool[:self.pick_count]))
+            portfolio.append({'numbers': combo, 'confidence': round(min(conf * 100, 100), 1), 'method': 'Diversity'})
+            used_tuples.add(t)
+        
+        # Sort by confidence
+        portfolio.sort(key=lambda x: -x.get('confidence', 0))
+        return portfolio[:count]
+    
+    # ==========================================
     # BACKTEST
     # ==========================================
+    def _reinforcement_backtest(self, predict_fn, test_count=20):
+        """V21: Reinforcement backtest with EMA and variance."""
+        n = len(self.data)
+        start = max(60, n - test_count)
+        matches = []
+        for i in range(start, n-1):
+            try:
+                pred = predict_fn(self.data[:i+1])
+                matches.append(len(set(pred) & set(self.data[i+1])))
+            except: matches.append(0)
+        if not matches:
+            return 0.0, 0.0
+        # EMA: recent matches weighted more
+        alpha = 0.3
+        ema = matches[0]
+        for m in matches[1:]:
+            ema = alpha * m + (1 - alpha) * ema
+        variance = float(np.var(matches))
+        return float(ema), variance
+    
     def _quick_backtest_fn(self, predict_fn, test_count=60):
         n = len(self.data)
         start = max(60, n - test_count)
