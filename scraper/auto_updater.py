@@ -1,7 +1,7 @@
 """
-Auto-Updater — Incremental scraper that runs on app startup.
-Only scrapes draws newer than the latest date in database.
-Uses 6-hour cooldown to avoid redundant scraping.
+Auto-Updater V2 — Incremental data updater for Streamlit app.
+Priority: Light scraper (requests) → Selenium fallback.
+Works on Streamlit Cloud without Chrome.
 """
 import time
 import os
@@ -9,11 +9,10 @@ import json
 import threading
 from datetime import datetime, timedelta
 
-# Cooldown file path (stores last update timestamp)
 _COOLDOWN_FILE = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), 'data', '.last_update'
 )
-_COOLDOWN_HOURS = 6
+_COOLDOWN_HOURS = 1  # Reduced from 6 → 1 hour for fresher data
 _update_lock = threading.Lock()
 
 
@@ -34,7 +33,10 @@ def _save_update_time():
     try:
         os.makedirs(os.path.dirname(_COOLDOWN_FILE), exist_ok=True)
         with open(_COOLDOWN_FILE, 'w') as f:
-            json.dump({'timestamp': datetime.now().isoformat()}, f)
+            json.dump({
+                'timestamp': datetime.now().isoformat(),
+                'method': 'auto_update_v2'
+            }, f)
     except Exception:
         pass
 
@@ -46,24 +48,51 @@ def _needs_update():
     return elapsed > timedelta(hours=_COOLDOWN_HOURS)
 
 
-def _format_date_for_site(dt):
-    """Convert datetime to dd-mm-yyyy for the website input."""
-    return dt.strftime('%d-%m-%Y')
+def _is_draw_day():
+    """Check if today is a draw day for any lottery.
+    Mega: Wed(2), Fri(4), Sun(6)
+    Power: Tue(1), Thu(3), Sat(5)
+    """
+    wd = datetime.now().weekday()
+    return wd in {1, 2, 3, 4, 5, 6}  # Every day except Monday
+
+
+def _data_is_current():
+    """Check if data is already up to date."""
+    from scraper.data_manager import get_latest_date
+    today = datetime.now().date()
+    
+    mega_latest = get_latest_date('mega')
+    power_latest = get_latest_date('power')
+    
+    mega_ok = False
+    power_ok = False
+    
+    if mega_latest:
+        try:
+            ld = datetime.strptime(mega_latest, '%Y-%m-%d').date()
+            if (today - ld).days <= 2:  # Within 2 days = likely current
+                mega_ok = True
+        except Exception:
+            pass
+    
+    if power_latest:
+        try:
+            ld = datetime.strptime(power_latest, '%Y-%m-%d').date()
+            if (today - ld).days <= 2:
+                power_ok = True
+        except Exception:
+            pass
+    
+    return mega_ok and power_ok
 
 
 def auto_update_data():
     """
-    Auto-update lottery data if cooldown has passed.
+    Auto-update lottery data. Uses light scraper (requests-based) first,
+    falls back to Selenium if available.
     
-    Returns:
-        dict with keys:
-            - 'status': 'updated' | 'skipped' | 'error'
-            - 'mega_count': total mega draws after update
-            - 'power_count': total power draws after update
-            - 'mega_new': new mega draws added (0 if skipped)
-            - 'power_new': new power draws added (0 if skipped)
-            - 'message': human-readable status message
-            - 'error': error message if status == 'error'
+    Returns dict with status info.
     """
     from scraper.data_manager import get_count, get_latest_date
 
@@ -71,55 +100,38 @@ def auto_update_data():
     if not _needs_update():
         mega_c = get_count('mega')
         power_c = get_count('power')
+        mega_latest = get_latest_date('mega') or 'N/A'
+        power_latest = get_latest_date('power') or 'N/A'
         return {
             'status': 'skipped',
             'mega_count': mega_c,
             'power_count': power_c,
             'mega_new': 0,
             'power_new': 0,
-            'message': f'Data đã cập nhật gần đây (cooldown {_COOLDOWN_HOURS}h). '
-                       f'Mega: {mega_c} kỳ, Power: {power_c} kỳ.',
+            'message': f'Cooldown active ({_COOLDOWN_HOURS}h). '
+                       f'Mega: {mega_c} kỳ (→{mega_latest}), '
+                       f'Power: {power_c} kỳ (→{power_latest}).',
         }
 
-    # Check if data is already up to date (latest draw date == today or yesterday)
-    mega_latest = get_latest_date('mega')
-    power_latest = get_latest_date('power')
-    today = datetime.now().date()
-
-    # Vietlott draws: Mega Wed/Fri/Sun, Power Mon/Wed/Thu/Sat
-    # If latest is today or yesterday, probably up to date
-    mega_up_to_date = False
-    power_up_to_date = False
-    if mega_latest:
-        try:
-            ld = datetime.strptime(mega_latest, '%Y-%m-%d').date()
-            if (today - ld).days <= 1:
-                mega_up_to_date = True
-        except Exception:
-            pass
-    if power_latest:
-        try:
-            ld = datetime.strptime(power_latest, '%Y-%m-%d').date()
-            if (today - ld).days <= 1:
-                power_up_to_date = True
-        except Exception:
-            pass
-
-    if mega_up_to_date and power_up_to_date:
+    # Check if data is already current
+    if _data_is_current():
         _save_update_time()
         mega_c = get_count('mega')
         power_c = get_count('power')
+        mega_latest = get_latest_date('mega') or 'N/A'
+        power_latest = get_latest_date('power') or 'N/A'
         return {
             'status': 'skipped',
             'mega_count': mega_c,
             'power_count': power_c,
             'mega_new': 0,
             'power_new': 0,
-            'message': f'Data đã mới nhất. Mega: {mega_c} kỳ (→ {mega_latest}), '
-                       f'Power: {power_c} kỳ (→ {power_latest}).',
+            'message': f'Data đã mới nhất. '
+                       f'Mega: {mega_c} kỳ (→{mega_latest}), '
+                       f'Power: {power_c} kỳ (→{power_latest}).',
         }
 
-    # Need to scrape — acquire lock to prevent concurrent scraping
+    # Acquire lock to prevent concurrent scraping
     if not _update_lock.acquire(blocking=False):
         mega_c = get_count('mega')
         power_c = get_count('power')
@@ -135,45 +147,48 @@ def auto_update_data():
     try:
         mega_before = get_count('mega')
         power_before = get_count('power')
+        method_used = 'none'
 
+        # === STRATEGY 1: Light scraper (requests + BeautifulSoup) ===
         try:
-            from scraper.scraper import create_driver, scrape_mega645, scrape_power655
+            from scraper.light_scraper import scrape_mega645_light, scrape_power655_light
+            
+            mega_new_light = scrape_mega645_light()
+            power_new_light = scrape_power655_light()
+            
+            if mega_new_light > 0 or power_new_light > 0:
+                method_used = 'light_scraper'
         except ImportError:
-            # Selenium not available (e.g. Streamlit Cloud) — skip gracefully
-            _save_update_time()
-            return {
-                'status': 'skipped',
-                'mega_count': mega_before,
-                'power_count': power_before,
-                'mega_new': 0,
-                'power_new': 0,
-                'message': f'Dùng data hiện có. Mega: {mega_before} kỳ, Power: {power_before} kỳ.',
-            }
+            print("[AutoUpdate] light_scraper not available")
+        except Exception as e:
+            print(f"[AutoUpdate] Light scraper error: {e}")
 
-        try:
-            driver = create_driver()
-        except Exception:
-            # ChromeDriver not available (Streamlit Cloud) — skip gracefully
-            _save_update_time()
-            return {
-                'status': 'skipped',
-                'mega_count': mega_before,
-                'power_count': power_before,
-                'mega_new': 0,
-                'power_new': 0,
-                'message': f'Dùng data hiện có. Mega: {mega_before} kỳ, Power: {power_before} kỳ.',
-            }
+        # === STRATEGY 2: Selenium fallback (only if light scraper found nothing) ===
+        mega_after_light = get_count('mega')
+        power_after_light = get_count('power')
+        
+        if method_used == 'none':
+            try:
+                from scraper.scraper import create_driver, scrape_mega645, scrape_power655
+                driver = create_driver()
+                try:
+                    scrape_mega645(driver)
+                    scrape_power655(driver)
+                    method_used = 'selenium'
+                finally:
+                    driver.quit()
+            except ImportError:
+                print("[AutoUpdate] Selenium not available (Streamlit Cloud)")
+            except Exception as e:
+                print(f"[AutoUpdate] Selenium error: {e}")
 
-        try:
-            scrape_mega645(driver)
-            scrape_power655(driver)
-        finally:
-            driver.quit()
-
+        # Calculate results
         mega_after = get_count('mega')
         power_after = get_count('power')
         mega_new = mega_after - mega_before
         power_new = power_after - power_before
+        mega_latest = get_latest_date('mega') or 'N/A'
+        power_latest = get_latest_date('power') or 'N/A'
 
         _save_update_time()
 
@@ -184,31 +199,33 @@ def auto_update_data():
                 'power_count': power_after,
                 'mega_new': mega_new,
                 'power_new': power_new,
-                'message': f'✅ Đã cập nhật thành công! '
-                           f'Mega: +{mega_new} kỳ (tổng {mega_after}), '
-                           f'Power: +{power_new} kỳ (tổng {power_after}).',
+                'message': f'✅ Cập nhật thành công ({method_used})! '
+                           f'Mega: +{mega_new} kỳ (tổng {mega_after}, →{mega_latest}), '
+                           f'Power: +{power_new} kỳ (tổng {power_after}, →{power_latest}).',
             }
         else:
             return {
-                'status': 'updated',
+                'status': 'checked',
                 'mega_count': mega_after,
                 'power_count': power_after,
                 'mega_new': 0,
                 'power_new': 0,
                 'message': f'Kiểm tra xong — không có kỳ mới. '
-                           f'Mega: {mega_after} kỳ, Power: {power_after} kỳ.',
+                           f'Mega: {mega_after} kỳ (→{mega_latest}), '
+                           f'Power: {power_after} kỳ (→{power_latest}).',
             }
 
     except Exception as e:
         mega_c = get_count('mega')
         power_c = get_count('power')
         return {
-            'status': 'skipped',
+            'status': 'error',
             'mega_count': mega_c,
             'power_count': power_c,
             'mega_new': 0,
             'power_new': 0,
             'message': f'Dùng data hiện có. Mega: {mega_c} kỳ, Power: {power_c} kỳ.',
+            'error': str(e),
         }
     finally:
         _update_lock.release()

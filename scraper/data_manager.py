@@ -1,4 +1,4 @@
-﻿"""
+"""
 Data Manager - SQLite database & CSV management for TinNam data.
 Handles storage, retrieval, validation and deduplication.
 """
@@ -148,6 +148,15 @@ def get_count(lottery_type):
     row = conn.execute(f'SELECT COUNT(*) as cnt FROM {table}').fetchone()
     conn.close()
     return row['cnt']
+
+
+def get_first_date(lottery_type):
+    """Get the earliest draw date for a lottery type."""
+    conn = get_db()
+    table = 'mega645' if lottery_type == 'mega' else 'power655'
+    row = conn.execute(f'SELECT MIN(draw_date) as min_date FROM {table}').fetchone()
+    conn.close()
+    return row['min_date'] if row else None
 
 
 def export_csv(lottery_type):
