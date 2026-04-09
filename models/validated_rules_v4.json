@@ -1,0 +1,98 @@
+{
+  "version": "4.0",
+  "total_draws": 1486,
+  "date_range": [
+    "2016-07-20",
+    "2026-03-20"
+  ],
+  "split": {
+    "train": 891,
+    "val": 297,
+    "test": 298
+  },
+  "signal_quality": {
+    "transition": {
+      "avg_match": 0.7872,
+      "lift": 0.984,
+      "n_tests": 296
+    },
+    "gap_overdue": {
+      "avg_match": 0.8142,
+      "lift": 1.0177,
+      "n_tests": 296
+    },
+    "momentum": {
+      "avg_match": 0.7872,
+      "lift": 0.984,
+      "n_tests": 296
+    },
+    "exp_decay": {
+      "avg_match": 0.7838,
+      "lift": 0.9797,
+      "n_tests": 296
+    },
+    "knn": {
+      "avg_match": 0.8547,
+      "lift": 1.0684,
+      "n_tests": 296
+    },
+    "pair_boost": {
+      "avg_match": 0.8176,
+      "lift": 1.022,
+      "n_tests": 296
+    },
+    "pos_markov": {
+      "avg_match": 0.8142,
+      "lift": 1.0177,
+      "n_tests": 296
+    },
+    "oddeven": {
+      "avg_match": 0.7128,
+      "lift": 0.891,
+      "n_tests": 296
+    },
+    "highlow": {
+      "avg_match": 0.7365,
+      "lift": 0.9206,
+      "n_tests": 296
+    },
+    "repeat_rate": {
+      "avg_match": 0.8547,
+      "lift": 1.0684,
+      "n_tests": 296
+    },
+    "decade_flow": {
+      "avg_match": 0.8649,
+      "lift": 1.0811,
+      "n_tests": 296
+    },
+    "streak": {
+      "avg_match": 0.8209,
+      "lift": 1.0262,
+      "n_tests": 296
+    }
+  },
+  "active_weights": {
+    "gap_overdue": 0.1359,
+    "knn": 0.1498,
+    "pair_boost": 0.1371,
+    "pos_markov": 0.1359,
+    "repeat_rate": 0.1498,
+    "decade_flow": 0.1534,
+    "streak": 0.1382
+  },
+  "backtest_test": {
+    "golden_avg": 0.8114,
+    "portfolio_avg": 1.4411,
+    "random_avg": 0.8047,
+    "improvement_pct": 0.84,
+    "portfolio_improvement_pct": 79.08,
+    "pct_3plus_golden": 1.68,
+    "pct_3plus_portfolio": 12.79,
+    "pct_3plus_random": 4.04,
+    "pct_4plus_portfolio": 0.67,
+    "n_tests": 297
+  },
+  "elapsed_seconds": 15.7,
+  "methodology": "Anti-overfitting: 3-way split, signals evaluated independently, only lift>1.0 signals used, quadratic weight scaling"
+}

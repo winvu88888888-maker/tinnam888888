@@ -1,0 +1,37 @@
+{
+  "version": "8.0 — Nuclear Cracker",
+  "methods": [
+    "XGBoost",
+    "MLP",
+    "FFT",
+    "PermEntropy",
+    "TransferEntropy",
+    "ForbiddenPatterns"
+  ],
+  "fft_findings": [],
+  "permutation_entropy": 0.9984,
+  "forbidden_pairs": 0,
+  "transfer_entropy_links": [
+    [
+      10,
+      45,
+      0.00537
+    ]
+  ],
+  "results": {
+    "xgboost_avg": 0.8307,
+    "mlp_avg": 0.7391,
+    "ensemble_avg": 0.8146,
+    "random_avg": 0.746,
+    "xgboost_improvement": 11.3,
+    "mlp_improvement": -0.9
+  },
+  "portfolio_500": {
+    "avg": 2.1373,
+    "pct_3plus": 36.61,
+    "pct_4plus": 7.32,
+    "pct_5plus": 0.92,
+    "pct_6": 0.0
+  },
+  "elapsed_seconds": 55.7
+}

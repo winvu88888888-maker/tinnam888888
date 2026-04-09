@@ -1,0 +1,57 @@
+{
+  "version": "9.0",
+  "god_algorithm": {
+    "avg": 6.0,
+    "pct_6": 100.0,
+    "note": "in-sample overfit = theoretical maximum"
+  },
+  "constraint_filter": {
+    "valid_combos": 7759163,
+    "reduction_pct": 4.7
+  },
+  "test_results": {
+    "port_1": {
+      "avg": 0.7925,
+      "pct_3": 2.43,
+      "pct_4": 0.0,
+      "pct_5": 0.0,
+      "pct_6": 0.0
+    },
+    "port_50": {
+      "avg": 1.6469,
+      "pct_3": 15.9,
+      "pct_4": 2.96,
+      "pct_5": 0.0,
+      "pct_6": 0.0
+    },
+    "port_500": {
+      "avg": 2.0485,
+      "pct_3": 33.15,
+      "pct_4": 7.28,
+      "pct_5": 0.54,
+      "pct_6": 0.0
+    },
+    "port_1000": {
+      "avg": 2.1267,
+      "pct_3": 36.93,
+      "pct_4": 9.16,
+      "pct_5": 1.08,
+      "pct_6": 0.0
+    },
+    "port_2000": {
+      "avg": 2.1752,
+      "pct_3": 38.01,
+      "pct_4": 10.78,
+      "pct_5": 2.43,
+      "pct_6": 0.0
+    },
+    "port_5000": {
+      "avg": 2.1968,
+      "pct_3": 38.81,
+      "pct_4": 11.86,
+      "pct_5": 2.7,
+      "pct_6": 0.0
+    }
+  },
+  "elapsed": 384.1
+}

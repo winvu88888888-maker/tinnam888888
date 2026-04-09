@@ -1,0 +1,165 @@
+{
+  "version": "3.0",
+  "total_draws": 1486,
+  "date_range": [
+    "2016-07-20",
+    "2026-03-20"
+  ],
+  "n_findings": 16,
+  "backtest": {
+    "exploit_avg": 0.6988,
+    "random_avg": 0.7298,
+    "improvement_pct": -4.26,
+    "pct_3plus": 1.86,
+    "n_tests": 322
+  },
+  "findings": [
+    {
+      "type": "markov_order3",
+      "strength": 1.03,
+      "number": 10,
+      "in_last_n": 1,
+      "order": 3,
+      "rate": 0.1844,
+      "z": 3.09,
+      "count": 78,
+      "total": 423
+    },
+    {
+      "type": "3step_chain_v2",
+      "strength": 2.08,
+      "chain": "15→8→13",
+      "train_rate": 0.389,
+      "test_rate": 0.833,
+      "lift": 6.25,
+      "test_n": 6
+    },
+    {
+      "type": "3step_chain_v2",
+      "strength": 2.0,
+      "chain": "15→35→6",
+      "train_rate": 0.278,
+      "test_rate": 0.8,
+      "lift": 6.0,
+      "test_n": 5
+    },
+    {
+      "type": "3step_chain_v2",
+      "strength": 1.79,
+      "chain": "39→45→23",
+      "train_rate": 0.312,
+      "test_rate": 0.714,
+      "lift": 5.36,
+      "test_n": 7
+    },
+    {
+      "type": "3step_chain_v2",
+      "strength": 1.67,
+      "chain": "45→10→39",
+      "train_rate": 0.278,
+      "test_rate": 0.667,
+      "lift": 5.0,
+      "test_n": 6
+    },
+    {
+      "type": "3step_chain_v2",
+      "strength": 1.67,
+      "chain": "29→44→28",
+      "train_rate": 0.286,
+      "test_rate": 0.667,
+      "lift": 5.0,
+      "test_n": 6
+    },
+    {
+      "type": "3step_chain_v2",
+      "strength": 1.56,
+      "chain": "43→39→2",
+      "train_rate": 0.294,
+      "test_rate": 0.625,
+      "lift": 4.69,
+      "test_n": 8
+    },
+    {
+      "type": "3step_chain_v2",
+      "strength": 1.56,
+      "chain": "20→8→44",
+      "train_rate": 0.3,
+      "test_rate": 0.625,
+      "lift": 4.69,
+      "test_n": 8
+    },
+    {
+      "type": "3step_chain_v2",
+      "strength": 1.5,
+      "chain": "25→17→11",
+      "train_rate": 0.292,
+      "test_rate": 0.6,
+      "lift": 4.5,
+      "test_n": 5
+    },
+    {
+      "type": "3step_chain_v2",
+      "strength": 1.5,
+      "chain": "22→32→21",
+      "train_rate": 0.429,
+      "test_rate": 0.6,
+      "lift": 4.5,
+      "test_n": 5
+    },
+    {
+      "type": "3step_chain_v2",
+      "strength": 1.5,
+      "chain": "22→32→29",
+      "train_rate": 0.286,
+      "test_rate": 0.6,
+      "lift": 4.5,
+      "test_n": 5
+    },
+    {
+      "type": "3step_chain_v2",
+      "strength": 1.5,
+      "chain": "32→27→30",
+      "train_rate": 0.35,
+      "test_rate": 0.6,
+      "lift": 4.5,
+      "test_n": 5
+    },
+    {
+      "type": "3step_chain_v2",
+      "strength": 1.5,
+      "chain": "22→40→11",
+      "train_rate": 0.294,
+      "test_rate": 0.6,
+      "lift": 4.5,
+      "test_n": 5
+    },
+    {
+      "type": "3step_chain_v2",
+      "strength": 1.5,
+      "chain": "33→38→22",
+      "train_rate": 0.364,
+      "test_rate": 0.6,
+      "lift": 4.5,
+      "test_n": 5
+    },
+    {
+      "type": "3step_chain_v2",
+      "strength": 1.5,
+      "chain": "30→4→30",
+      "train_rate": 0.273,
+      "test_rate": 0.6,
+      "lift": 4.5,
+      "test_n": 5
+    },
+    {
+      "type": "3step_chain_v2",
+      "strength": 1.5,
+      "chain": "21→25→28",
+      "train_rate": 0.3,
+      "test_rate": 0.6,
+      "lift": 4.5,
+      "test_n": 5
+    }
+  ],
+  "elapsed_seconds": 74.4
+}

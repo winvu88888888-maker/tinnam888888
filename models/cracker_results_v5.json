@@ -1,0 +1,146 @@
+{
+  "version": "5.0 — Deterministic System Cracker",
+  "philosophy": "No machine is truly random. Find the determinism.",
+  "total_draws": 1486,
+  "attacks": {
+    "prng_state": {
+      "acf_peaks": 0,
+      "top_gcd": [
+        1,
+        305
+      ]
+    },
+    "phase_space": {
+      "avg_determinism": 0.867,
+      "expected": 0.8667,
+      "z_score": 0.32,
+      "anomalous_count": 0,
+      "top_numbers": []
+    },
+    "digit_analysis": {
+      "unit_digit_anomalies": [],
+      "unit_transition_anomalies": 14,
+      "top_transitions": [
+        {
+          "pos": 6,
+          "from_digit": 5,
+          "to_digit": 5,
+          "rate": 0.195,
+          "z": 5.08
+        },
+        {
+          "pos": 1,
+          "from_digit": 2,
+          "to_digit": 1,
+          "rate": 0.198,
+          "z": 4.88
+        },
+        {
+          "pos": 6,
+          "from_digit": 3,
+          "to_digit": 4,
+          "rate": 0.203,
+          "z": 4.88
+        },
+        {
+          "pos": 6,
+          "from_digit": 3,
+          "to_digit": 5,
+          "rate": 0.198,
+          "z": 4.64
+        },
+        {
+          "pos": 1,
+          "from_digit": 8,
+          "to_digit": 1,
+          "rate": 0.229,
+          "z": 4.39
+        },
+        {
+          "pos": 1,
+          "from_digit": 5,
+          "to_digit": 2,
+          "rate": 0.205,
+          "z": 4.31
+        },
+        {
+          "pos": 6,
+          "from_digit": 5,
+          "to_digit": 4,
+          "rate": 0.18,
+          "z": 4.25
+        },
+        {
+          "pos": 1,
+          "from_digit": 4,
+          "to_digit": 1,
+          "rate": 0.189,
+          "z": 3.98
+        },
+        {
+          "pos": 6,
+          "from_digit": 1,
+          "to_digit": 5,
+          "rate": 0.199,
+          "z": 3.97
+        },
+        {
+          "pos": 6,
+          "from_digit": 0,
+          "to_digit": 5,
+          "rate": 0.19,
+          "z": 3.22
+        }
+      ]
+    },
+    "ball_physics": {
+      "ink_correlation_r": -0.0582,
+      "ink_correlation_p": 0.704,
+      "digit_count_t": 0.212,
+      "digit_count_p": 0.833
+    },
+    "compression": {
+      "overall_z": 0.18,
+      "actual_ratio": 0.396871,
+      "random_ratio": 0.396679,
+      "lz_anomalies": 0
+    },
+    "modular": {
+      "tested_mods": [
+        3,
+        5,
+        7,
+        11,
+        13,
+        17,
+        19,
+        23
+      ]
+    },
+    "machine_learning": {
+      "ml_avg": 0.8059,
+      "random_avg": 0.8814,
+      "improvement": -8.6,
+      "pct_3plus": 2.96
+    },
+    "lyapunov": {
+      "exponent": 0.0568
+    },
+    "temporal": {
+      "anova_f": 0.649,
+      "anova_p": 0.5226
+    }
+  },
+  "ensemble_backtest": {
+    "golden_avg": 0.7574,
+    "portfolio_avg": 1.6011,
+    "random_avg": 0.8814,
+    "golden_improvement": -14.07,
+    "portfolio_improvement": 81.65,
+    "pct_3plus_golden": 1.08,
+    "pct_3plus_portfolio": 15.09,
+    "pct_3plus_random": 4.58,
+    "n_tests": 371
+  },
+  "elapsed_seconds": 27.3
+}

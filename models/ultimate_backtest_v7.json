@@ -1,0 +1,55 @@
+{
+  "version": "7.0 \u2014 Ultimate Engine",
+  "total_draws": 1486,
+  "n_test": 1285,
+  "elapsed": 32.3,
+  "results": {
+    "portfolio_1": {
+      "avg": 0.8304,
+      "pct_3plus": 2.8016,
+      "pct_4plus": 0.0778,
+      "pct_5plus": 0.0,
+      "pct_6": 0.0
+    },
+    "portfolio_10": {
+      "avg": 1.2591,
+      "pct_3plus": 7.4708,
+      "pct_4plus": 0.856,
+      "pct_5plus": 0.0,
+      "pct_6": 0.0
+    },
+    "portfolio_50": {
+      "avg": 1.5603,
+      "pct_3plus": 15.0195,
+      "pct_4plus": 1.7121,
+      "pct_5plus": 0.1556,
+      "pct_6": 0.0
+    },
+    "portfolio_100": {
+      "avg": 1.6887,
+      "pct_3plus": 18.8327,
+      "pct_4plus": 2.6459,
+      "pct_5plus": 0.3891,
+      "pct_6": 0.0
+    },
+    "portfolio_200": {
+      "avg": 1.8078,
+      "pct_3plus": 23.4241,
+      "pct_4plus": 3.8132,
+      "pct_5plus": 0.3891,
+      "pct_6": 0.0
+    },
+    "portfolio_500": {
+      "avg": 1.9486,
+      "pct_3plus": 29.3385,
+      "pct_4plus": 6.2257,
+      "pct_5plus": 0.6226,
+      "pct_6": 0.0
+    }
+  },
+  "random": {
+    "avg": 0.8047,
+    "pct_3plus": 2.4903,
+    "pct_6": 0.0
+  }
+}

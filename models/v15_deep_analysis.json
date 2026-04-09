@@ -1,0 +1,10 @@
+{
+  "analysis": "winning_combo_ranking",
+  "n_contained": 607,
+  "avg_percentile": 50.2,
+  "median_percentile": 49.9,
+  "top1_pct": 1.2,
+  "top5_pct": 4.8,
+  "top10_pct": 9.7,
+  "elapsed": 677.7
+}

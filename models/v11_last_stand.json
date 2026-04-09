@@ -1,0 +1,88 @@
+{
+  "version": "11.0 — LAST STAND",
+  "weapons": [
+    "Sequence Model (GBM+temporal)",
+    "Machine Bias (Smartplay)",
+    "Coverage System (Mandel)",
+    "Existing Engines"
+  ],
+  "n_draws": 1486,
+  "n_test": 1286,
+  "warmup": 200,
+  "weapon_comparison": {
+    "seq": {
+      "avg": 0.811,
+      "pct_3": 3.11,
+      "pct_4": 0.08,
+      "pct_5": 0.0,
+      "pct_6": 0.0
+    },
+    "machine": {
+      "avg": 0.7784,
+      "pct_3": 1.87,
+      "pct_4": 0.0,
+      "pct_5": 0.0,
+      "pct_6": 0.0
+    },
+    "existing": {
+      "avg": 0.8009,
+      "pct_3": 1.94,
+      "pct_4": 0.0,
+      "pct_5": 0.0,
+      "pct_6": 0.0
+    },
+    "ensemble": {
+      "avg": 0.7722,
+      "pct_3": 2.49,
+      "pct_4": 0.08,
+      "pct_5": 0.0,
+      "pct_6": 0.0
+    }
+  },
+  "portfolio_results": {
+    "port_1": {
+      "avg": 0.7885,
+      "pct_3": 2.64,
+      "pct_4": 0.16,
+      "pct_5": 0.0,
+      "pct_6": 0.0
+    },
+    "port_10": {
+      "avg": 1.4432,
+      "pct_3": 11.2,
+      "pct_4": 1.17,
+      "pct_5": 0.0,
+      "pct_6": 0.0
+    },
+    "port_50": {
+      "avg": 2.0132,
+      "pct_3": 26.52,
+      "pct_4": 3.58,
+      "pct_5": 0.08,
+      "pct_6": 0.0
+    },
+    "port_100": {
+      "avg": 2.1477,
+      "pct_3": 32.5,
+      "pct_4": 5.37,
+      "pct_5": 0.23,
+      "pct_6": 0.0
+    },
+    "port_200": {
+      "avg": 2.2753,
+      "pct_3": 38.49,
+      "pct_4": 7.62,
+      "pct_5": 0.39,
+      "pct_6": 0.0
+    },
+    "port_500": {
+      "avg": 2.437,
+      "pct_3": 47.59,
+      "pct_4": 10.26,
+      "pct_5": 0.7,
+      "pct_6": 0.0
+    }
+  },
+  "random_avg": 0.7823,
+  "elapsed_seconds": 5122.3
+}

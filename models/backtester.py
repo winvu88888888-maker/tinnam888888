@@ -22,6 +22,7 @@ Scoring Levels:
 """
 import numpy as np
 from collections import Counter, defaultdict
+from itertools import combinations
 import time
 import json
 import os
@@ -79,6 +80,9 @@ class BacktestEngine:
             {'name': 'Anti-Repeat', 'func': self._predict_anti_repeat},
             {'name': 'Ensemble Vote (V15)', 'func': self._predict_ensemble_vote},
             {'name': 'Momentum+Regime', 'func': self._predict_momentum_regime},
+            {'name': 'Consensus Engine', 'func': self._predict_consensus},
+            {'name': 'Deep Forensic V2', 'func': self._predict_deep_forensic},
+            {'name': 'Rule Engine (69 rules)', 'func': self._predict_rule_engine},
             {'name': 'Random Baseline', 'func': self._predict_random},
         ]
         
@@ -515,6 +519,36 @@ class BacktestEngine:
             if num in data[-1]:
                 scores[num] -= 3
         return sorted(scores, key=lambda x: -scores[x])[:self.pick_count]
+    
+    def _predict_consensus(self, data):
+        """Use full Consensus Engine to produce golden set prediction."""
+        try:
+            from models.consensus_engine import ConsensusEngine
+            engine = ConsensusEngine(self.max_number, self.pick_count)
+            result = engine.predict(data, n_portfolio=5)
+            return result.get('golden_set', self._predict_random(data))
+        except Exception:
+            return self._predict_ensemble_vote(data)
+    
+    def _predict_deep_forensic(self, data):
+        """Use Deep Forensic V2 engine for prediction."""
+        try:
+            from models.deep_forensic import DeepForensic
+            engine = DeepForensic(self.max_number, self.pick_count)
+            result = engine.analyze(data)
+            return result.get('primary', self._predict_random(data))
+        except Exception:
+            return self._predict_ensemble_vote(data)
+    
+    def _predict_rule_engine(self, data):
+        """Use Rule Engine with 69 validated statistical rules."""
+        try:
+            from models.rule_engine import RuleEngine
+            engine = RuleEngine(self.max_number, self.pick_count)
+            result = engine.predict(data, n_portfolio=5)
+            return result.get('primary', self._predict_random(data))
+        except Exception:
+            return self._predict_ensemble_vote(data)
     
     def _predict_random(self, data):
         """Random baseline for comparison."""

@@ -1,0 +1,85 @@
+{
+  "version": "13.0 — SINGULARITY",
+  "improvements": [
+    "Meta-Stacker",
+    "Confidence-Adaptive Pool 18-30",
+    "Double-Layer Pool",
+    "Port-2000"
+  ],
+  "n_draws": 1486,
+  "n_test": 1286,
+  "portfolio_results": {
+    "port_1": {
+      "avg": 0.8056,
+      "pct_3": 1.87,
+      "pct_4": 0.08,
+      "pct_5": 0.0,
+      "pct_6": 0.0
+    },
+    "port_10": {
+      "avg": 1.6151,
+      "pct_3": 13.06,
+      "pct_4": 1.32,
+      "pct_5": 0.08,
+      "pct_6": 0.0
+    },
+    "port_50": {
+      "avg": 2.1477,
+      "pct_3": 32.19,
+      "pct_4": 3.89,
+      "pct_5": 0.16,
+      "pct_6": 0.0
+    },
+    "port_100": {
+      "avg": 2.4044,
+      "pct_3": 44.95,
+      "pct_4": 7.39,
+      "pct_5": 0.39,
+      "pct_6": 0.0
+    },
+    "port_200": {
+      "avg": 2.6345,
+      "pct_3": 56.61,
+      "pct_4": 12.44,
+      "pct_5": 0.62,
+      "pct_6": 0.0
+    },
+    "port_500": {
+      "avg": 2.9308,
+      "pct_3": 72.55,
+      "pct_4": 22.01,
+      "pct_5": 1.24,
+      "pct_6": 0.0
+    },
+    "port_1000": {
+      "avg": 3.1641,
+      "pct_3": 82.74,
+      "pct_4": 32.5,
+      "pct_5": 2.41,
+      "pct_6": 0.0
+    },
+    "port_2000": {
+      "avg": 3.4253,
+      "pct_3": 91.45,
+      "pct_4": 46.42,
+      "pct_5": 5.21,
+      "pct_6": 0.08
+    }
+  },
+  "pool_containment": {
+    "count": 263,
+    "pct": 20.45
+  },
+  "five_hits": 16,
+  "six_hits": 1,
+  "confidence_distribution": {
+    "MINIMAL": 1285,
+    "LOW": 1
+  },
+  "avg_pool_size": 30.0,
+  "miss_analysis_summary": {
+    "in_pool": 13,
+    "out_pool": 3
+  },
+  "elapsed_seconds": 1573.4
+}

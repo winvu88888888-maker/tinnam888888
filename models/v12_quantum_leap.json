@@ -1,0 +1,364 @@
+{
+  "version": "12.0 — QUANTUM LEAP",
+  "improvements": [
+    "Adaptive Weights",
+    "Dynamic Pool 25-30",
+    "Safety Net",
+    "Extended Portfolio 1000"
+  ],
+  "n_draws": 1486,
+  "n_test": 1286,
+  "warmup": 200,
+  "portfolio_results": {
+    "port_1": {
+      "avg": 0.7823,
+      "pct_3": 2.41,
+      "pct_4": 0.08,
+      "pct_5": 0.0,
+      "pct_6": 0.0
+    },
+    "port_10": {
+      "avg": 1.4557,
+      "pct_3": 11.59,
+      "pct_4": 0.93,
+      "pct_5": 0.0,
+      "pct_6": 0.0
+    },
+    "port_50": {
+      "avg": 2.0467,
+      "pct_3": 26.13,
+      "pct_4": 3.65,
+      "pct_5": 0.0,
+      "pct_6": 0.0
+    },
+    "port_100": {
+      "avg": 2.2131,
+      "pct_3": 33.75,
+      "pct_4": 5.75,
+      "pct_5": 0.0,
+      "pct_6": 0.0
+    },
+    "port_200": {
+      "avg": 2.3779,
+      "pct_3": 41.52,
+      "pct_4": 8.24,
+      "pct_5": 0.23,
+      "pct_6": 0.0
+    },
+    "port_500": {
+      "avg": 2.563,
+      "pct_3": 51.48,
+      "pct_4": 12.21,
+      "pct_5": 0.86,
+      "pct_6": 0.0
+    },
+    "port_1000": {
+      "avg": 2.6998,
+      "pct_3": 58.94,
+      "pct_4": 16.1,
+      "pct_5": 1.17,
+      "pct_6": 0.0
+    }
+  },
+  "random_avg": 0.7823,
+  "pool_containment": {
+    "count": 52,
+    "pct": 4.04
+  },
+  "five_of_six": 11,
+  "six_of_six": 0,
+  "miss_analysis": [
+    {
+      "draw": 316,
+      "actual": [
+        5,
+        6,
+        29,
+        30,
+        37,
+        38
+      ],
+      "matched": [
+        5,
+        6,
+        29,
+        37,
+        38
+      ],
+      "missed": [
+        30
+      ],
+      "missed_in_pool": [
+        30
+      ],
+      "missed_out_pool": [],
+      "pool_size": 27
+    },
+    {
+      "draw": 366,
+      "actual": [
+        3,
+        5,
+        11,
+        18,
+        24,
+        29
+      ],
+      "matched": [
+        3,
+        5,
+        18,
+        24,
+        29
+      ],
+      "missed": [
+        11
+      ],
+      "missed_in_pool": [
+        11
+      ],
+      "missed_out_pool": [],
+      "pool_size": 27
+    },
+    {
+      "draw": 414,
+      "actual": [
+        5,
+        6,
+        16,
+        18,
+        24,
+        42
+      ],
+      "matched": [
+        5,
+        6,
+        18,
+        24,
+        42
+      ],
+      "missed": [
+        16
+      ],
+      "missed_in_pool": [
+        16
+      ],
+      "missed_out_pool": [],
+      "pool_size": 27
+    },
+    {
+      "draw": 499,
+      "actual": [
+        2,
+        6,
+        7,
+        25,
+        28,
+        41
+      ],
+      "matched": [
+        2,
+        6,
+        7,
+        28,
+        41
+      ],
+      "missed": [
+        25
+      ],
+      "missed_in_pool": [
+        25
+      ],
+      "missed_out_pool": [],
+      "pool_size": 27
+    },
+    {
+      "draw": 698,
+      "actual": [
+        7,
+        9,
+        14,
+        23,
+        35,
+        41
+      ],
+      "matched": [
+        7,
+        14,
+        23,
+        35,
+        41
+      ],
+      "missed": [
+        9
+      ],
+      "missed_in_pool": [],
+      "missed_out_pool": [
+        9
+      ],
+      "pool_size": 27
+    },
+    {
+      "draw": 792,
+      "actual": [
+        9,
+        11,
+        15,
+        20,
+        32,
+        36
+      ],
+      "matched": [
+        9,
+        11,
+        15,
+        20,
+        36
+      ],
+      "missed": [
+        32
+      ],
+      "missed_in_pool": [],
+      "missed_out_pool": [
+        32
+      ],
+      "pool_size": 27
+    },
+    {
+      "draw": 987,
+      "actual": [
+        3,
+        5,
+        7,
+        37,
+        39,
+        42
+      ],
+      "matched": [
+        3,
+        5,
+        37,
+        39,
+        42
+      ],
+      "missed": [
+        7
+      ],
+      "missed_in_pool": [
+        7
+      ],
+      "missed_out_pool": [],
+      "pool_size": 27
+    },
+    {
+      "draw": 1030,
+      "actual": [
+        10,
+        27,
+        37,
+        40,
+        42,
+        43
+      ],
+      "matched": [
+        10,
+        27,
+        37,
+        40,
+        43
+      ],
+      "missed": [
+        42
+      ],
+      "missed_in_pool": [],
+      "missed_out_pool": [
+        42
+      ],
+      "pool_size": 27
+    },
+    {
+      "draw": 1048,
+      "actual": [
+        4,
+        9,
+        10,
+        22,
+        41,
+        44
+      ],
+      "matched": [
+        4,
+        9,
+        10,
+        22,
+        44
+      ],
+      "missed": [
+        41
+      ],
+      "missed_in_pool": [],
+      "missed_out_pool": [
+        41
+      ],
+      "pool_size": 27
+    },
+    {
+      "draw": 1226,
+      "actual": [
+        9,
+        10,
+        23,
+        25,
+        28,
+        38
+      ],
+      "matched": [
+        9,
+        10,
+        23,
+        25,
+        38
+      ],
+      "missed": [
+        28
+      ],
+      "missed_in_pool": [],
+      "missed_out_pool": [
+        28
+      ],
+      "pool_size": 27
+    },
+    {
+      "draw": 1380,
+      "actual": [
+        7,
+        22,
+        24,
+        28,
+        42,
+        45
+      ],
+      "matched": [
+        7,
+        22,
+        24,
+        42,
+        45
+      ],
+      "missed": [
+        28
+      ],
+      "missed_in_pool": [
+        28
+      ],
+      "missed_out_pool": [],
+      "pool_size": 27
+    }
+  ],
+  "final_weights": [
+    2.0,
+    1.5,
+    0.5
+  ],
+  "elapsed_seconds": 2521.2
+}

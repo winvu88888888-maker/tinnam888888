@@ -1217,6 +1217,30 @@ def main():
     with tab_power:
         render_lottery_tab("power")
 
+    # ==========================================
+    # FORENSIC RULES PANEL — Toggle Button
+    # ==========================================
+    st.markdown("""
+    <div style="text-align:center;margin:32px 0 8px;">
+        <div style="width:60%;margin:0 auto;height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,0.4),transparent);"></div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_f1, col_f2, col_f3 = st.columns([1, 2, 1])
+    with col_f2:
+        show_rules = st.toggle(
+            "🔬 Forensic Master Rules — 58 Quy Luật & Lỗ Hổng",
+            value=False,
+            help="Bật để xem toàn bộ quy luật và lỗ hổng RNG đã phát hiện từ phân tích V1→V9"
+        )
+
+    if show_rules:
+        try:
+            from models.forensic_rules import render_forensic_rules
+            render_forensic_rules(st)
+        except Exception as e:
+            st.error(f"❌ Lỗi load Forensic Rules: {e}")
+
     # Sidebar
     with st.sidebar:
         st.markdown("### ⚙️ Settings")
